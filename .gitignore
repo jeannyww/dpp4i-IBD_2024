@@ -1,0 +1,43 @@
+# exclude file extensions
+workspace.code-workspace
+.sasjslint
+*.webprj
+*.session
+*.bak
+*~
+*.xlsx
+*.csv
+.csv
+.xlsx
+*.txt
+*.tmp
+*.lst
+*.log
+*.aux
+*.bbl
+*.backup
+*.blg
+*.brf
+*.out
+*.html
+_*.sas
+*.eml
+.titles
+.versions
+.xref
+.directory
+# special files
+Distfile
+HEADER
+.dir.*
+*-archive.sas
+*-bugged.sas
+*-save.sas
+*-old.sas
+# exclude directories
+mtest/
+out/
+ref/*.csv
+test/
+prog/archive/
+.vscode/

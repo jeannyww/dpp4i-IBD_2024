@@ -1,4 +1,5 @@
 /**setup*/
+/* changes made on inset date here:   for new working directory */
 *Assigning libnames, titles, footnotes for project, run for sample;
 %macro setup ( programName , savelog , dataset);
 

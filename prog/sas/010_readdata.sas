@@ -51,7 +51,7 @@ option SASAUTOS=(SASAUTOS "D:\Externe Projekte\UNC\wangje\sas\macros");
 
     data &outlib..&drug._event; 
         infile "D:\Externe Projekte\UNC\Task231122 - IBDandDPP4I (db23-1)\Tasks\01 Get Cohort\results\2023-12-16\Task231122_01_231122_&drug._Event\Task231122_01_231122_&drug._Event.csv" 
-        dlm="," firstobs=2 n=200 missover;
+        dsd dlm="," firstobs=2 n=200 missover;
         length ID $ 11 eventtype 8 EventDate $ 10 EventDate_tx $ 10 badrx_BCode $ 10 badrx_GCode $ 10 EndOfLine $ 10;
         input ID $ eventtype ReadCode $ EventDate $ EventDate_tx $ badrx_BCode $ badrx_GCode $ EndOfLine $;
     run;
@@ -59,6 +59,7 @@ option SASAUTOS=(SASAUTOS "D:\Externe Projekte\UNC\wangje\sas\macros");
     %end; 
 %mend read_eventcsv;
 
+/* Run macro to read in the 4 event/outcome files into the raw libname  */
 %LET druglist = dpp4i  tzd su sglt2i ;
 %read_eventcsv ( &druglist., raw );
 
@@ -76,7 +77,7 @@ option SASAUTOS=(SASAUTOS "D:\Externe Projekte\UNC\wangje\sas\macros");
         %let drug=%scan(&druglist.,&i.);
     data &outlib..&drug._trtmt; 
         infile "D:\Externe Projekte\UNC\Task231122 - IBDandDPP4I (db23-1)\Tasks\01 Get Cohort\results\2023-12-16\Task231122_01_231122_&drug._Treatment\Task231122_01_231122_&drug._Treatment.csv" 
-        dlm="," firstobs=2 n=200 missover ; 
+        dsd dlm="," firstobs=2 n=200 missover ; 
         length ID $ 12 rxdate $ 10 gemscript $ 10 BCSDP $ 10 rx_dayssupply 8 DPP4i 8 SU 8 SGLT2i 8 TZD 8 time0 $ 10 age 8 sex $ 10 smoke $ 10 smoketime 8 height 8 heighttime 8 weight 8 weighttime 8 bmi 8 bmitime 8 alc $ 10 alctime 8 alcunit 8 alcavg 8 hba1c 8 hba1ctime 8 hba1cno 8 hba1cavg 8 history 8 GPyearDx 8 GPyearDxRx 8 Alc_P_bc $ 10 Alc_P_bl 8 colo_bc $ 10 colo_bl 8 IBD_P_bc $ 10 IBD_P_bl 8 DivCol_I_bc $ 10 DivCol_I_bl 8 DivCol_P_bc $ 10 DivCol_P_bl 8 PCOS_bc $ 10 PCOS_bl 8 DiabGest_bc $ 10 DiabGest_bl 8 IBD_I_bc $ 10 IBD_I_bl 8 asthma_bc $ 10 asthma_bl 8 copd_bc $ 10 copd_bl 8 arrhyth_bc $ 10 arrhyth_bl 8 chf_bc $ 10 chf_bl 8 ihd_bc $ 10 ihd_bl 8 mi_bc $ 10 mi_bl 8 hyperten_bc $ 10 hyperten_bl 8 stroke_bc $ 10 stroke_bl 8 hyperlip_bc $ 10 hyperlip_bl 8 diab_bc $ 10 diab_bl 8 dvt_bc $ 10 dvt_bl 8 pe_bc $ 10 pe_bl 8 gout_bc $ 10 gout_bl 8 pthyro_bc $ 10 pthyro_bl 8 mthyro_bc $ 10 mthyro_bl 8 depres_bc $ 10 depres_bl 8 affect_bc $ 10 affect_bl 8 suic_bc $ 10 suic_bl 8 sleep_bc $ 10 sleep_bl 8 schizo_bc $ 10 schizo_bl 8 epilep_bc $ 10 epilep_bl 8 renal_bc $ 10 renal_bl 8 GIulcer_bc $ 10 GIulcer_bl 8 RhArth_bc $ 10 RhArth_bl 8 alrhi_bc $ 10 alrhi_bl 8 glauco_bc $ 10 glauco_bl 8 migra_bc $ 10 migra_bl 8 sepsis_bc $ 10 sepsis_bl 8 pneumo_bc $ 10 pneumo_bl 8 nephr_bc $ 10 nephr_bl 8 nerop_bc $ 10 nerop_bl 8 dret_bc $ 10 dret_bl 8 psorI_bc $ 10 psorI_bl 8 psorP_bc $ 10 psorP_bl 8 vasc_bc $ 10 vasc_bl 8 SjSy_bc $ 10 SjSy_bl 8 sLup_bc $ 10 sLup_bl 8 PerArtD_bc $ 10 PerArtD_bl 8 AbdPain_bc $ 10 AbdPain_bl 8 Diarr_bc $ 10 Diarr_bl 8 BkStool_bc $ 10 BkStool_bl 8 Crohns_bc $ 10 Crohns_bl 8 Ucolitis_bc $ 10 Ucolitis_bl 8 Icomitis_bc $ 10 Icomitis_bl 8 Gastent_bc $ 10 Gastent_bl 8 ColIle_bc $ 10 ColIle_bl 8 Sigmo_bc $ 10 Sigmo_bl 8 Biops_bc $ 10 Biops_bl 8 Ileo_bc $ 10 Ileo_bl 8 HBA1c_bc $ 10 HBA1c_bl 8 DPP4i_bc $ 10 DPP4i_gc $ 10 DPP4i_bl 8 DPP4i_tot1yr 8 SU_bc $ 10 SU_gc $ 10 SU_bl 8 SU_tot1yr 8 SGLT2i_bc $ 10 SGLT2i_gc $ 10 SGLT2i_bl 8 SGLT2i_tot1yr 8 TZD_bc $ 10 TZD_gc $ 10 TZD_bl 8 TZD_tot1yr 8 Insulin_bc $ 10 Insulin_gc $ 10 Insulin_bl 8 Insulin_tot1yr 8 bigua_bc $ 10 bigua_gc $ 10 bigua_bl 8 bigua_tot1yr 8 prand_bc $ 10 prand_gc $ 10 prand_bl 8 prand_tot1yr 8 agluco_bc $ 10 agluco_gc $ 10 agluco_bl 8 agluco_tot1yr 8 OAntGLP_bc $ 10 OAntGLP_gc $ 10 OAntGLP_bl 8 OAntGLP_tot1yr 8 AminoS_bc $ 10 AminoS_gc $ 10 AminoS_bl 8 AminoS_tot1yr 8 Mesal_bc $ 10 Mesal_gc $ 10 Mesal_bl 8 Mesal_tot1yr 8 Sulfas_bc $ 10 Sulfas_gc $ 10 Sulfas_bl 8 Sulfas_tot1yr 8 Olsala_bc $ 10 Olsala_gc $ 10 Olsala_bl 8 Olsala_tot1yr 8 Balsal_bc $ 10 Balsal_gc $ 10 Balsal_bl 8 Balsal_tot1yr 8 ace_bc $ 10 ace_gc $ 10 
         ace_bl 8 ace_tot1yr 8 arb_bc $ 10 arb_gc $ 10 arb_bl 8 arb_tot1yr 8 bb_bc $ 10 bb_gc $ 10 bb_bl 8 bb_tot1yr 8 ccb_bc $ 10 ccb_gc $ 10 ccb_bl 8 ccb_tot1yr 8 nitrat_bc $ 10 nitrat_gc $ 10 nitrat_bl 8 nitrat_tot1yr 8 coronar_bc $ 10 coronar_gc $ 10 coronar_bl 8 coronar_tot1yr 8 antiarr_bc $ 10 antiarr_gc $ 10 antiarr_bl 8 antiarr_tot1yr 8 thrombo_bc $ 10 thrombo_gc $ 10 thrombo_bl 8 thrombo_tot1yr 8 antivitk_bc $ 10 antivitk_gc $ 10 antivitk_bl 8 antivitk_tot1yr 8 hepar_bc $ 10 hepar_gc $ 10 hepar_bl 8 hepar_tot1yr 8 stat_bc $ 10 stat_gc $ 10 stat_bl 8 stat_tot1yr 8 fib_bc $ 10 fib_gc $ 10 fib_bl 8 fib_tot1yr 8 lla_bc $ 10 lla_gc $ 10 lla_bl 8 lla_tot1yr 8 thiaz_bc $ 10 thiaz_gc $ 10 thiaz_bl 8 thiaz_tot1yr 8 loop_bc $ 10 loop_gc $ 10 loop_bl 8 loop_tot1yr 8 kspar_bc $ 10 kspar_gc $ 10 kspar_bl 8 kspar_tot1yr 8 diurcom_bc $ 10 diurcom_gc $ 10 diurcom_bl 8 diurcom_tot1yr 8 thiaantih_bc $ 10 thiaantih_gc $ 10 thiaantih_bl 8 thiaantih_tot1yr 8 diurall_bc $ 10 diurall_gc $ 10 diurall_bl 8 diurall_tot1yr 8 ass_bc $ 10 ass_gc $ 10 ass_bl 8 ass_tot1yr 8 asscvd_bc $ 10 asscvd_gc $ 10 asscvd_bl 8 asscvd_tot1yr 8 allnsa_bc $ 10 allnsa_gc $ 10 allnsa_bl 8 
         allnsa_tot1yr 8 para_bc $ 10 para_gc $ 10 para_bl 8 para_tot1yr 8 bago_bc $ 10 bago_gc $ 10 bago_bl 8 bago_tot1yr 8 abago_bc $ 10 abago_gc $ 10 abago_bl 8 abago_tot1yr 8 opio_bc $ 10 opio_gc $ 10 opio_bl 8 opio_tot1yr 8 acho_bc $ 10 acho_gc $ 10 acho_bl 8 acho_tot1yr 8 sterinh_bc $ 10 sterinh_gc $ 10 sterinh_bl 8 sterinh_tot1yr 8 lra_bc $ 10 lra_gc $ 10 lra_bl 8 lra_tot1yr 8 xant_bc $ 10 xant_gc $ 10 xant_bl 8 xant_tot1yr 8 ahist_bc $ 10 ahist_gc $ 10 ahist_bl 8 ahist_tot1yr 8 ahistc_bc $ 10 ahistc_gc $ 10 ahistc_bl 8 ahistc_tot1yr 8 h2_bc $ 10 h2_gc $ 10 h2_bl 8 h2_tot1yr 
@@ -98,7 +99,7 @@ option SASAUTOS=(SASAUTOS "D:\Externe Projekte\UNC\wangje\sas\macros");
 %mend read_trtmtcsv ;
 
 
-
+/* Run macro to read in the 4 treatment files into the raw libname  */
 %LET druglist = dpp4i  tzd su sglt2i ;
 %read_trtmtcsv ( &druglist. , raw);
 

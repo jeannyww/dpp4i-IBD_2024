@@ -2,7 +2,7 @@ import pandas as pd
 import numpy as np
 
 # Read the CSV file into a DataFrame
-df= pd.read_csv(filepath_or_buffer='.\\ref\\labels_task231122.csv', header=0) 
+df= pd.read_csv(filepath_or_buffer='.\\labels_task231122.csv', header=0) 
 
 # Print the first 5 rows of the DataFrame
 print(df.head())

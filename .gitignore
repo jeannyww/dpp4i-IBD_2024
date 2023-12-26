@@ -37,7 +37,9 @@ HEADER
 # exclude directories
 mtest/
 out/
-ref/*.csv
+ref/
 test/
 prog/archive/
 .vscode/
+.sasjslint
+

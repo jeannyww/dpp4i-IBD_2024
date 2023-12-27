@@ -52,7 +52,7 @@ option SASAUTOS=(SASAUTOS "D:\Externe Projekte\UNC\wangje\sas\macros");
     data  tmp; 
         infile "D:\Externe Projekte\UNC\Task231122 - IBDandDPP4I (db23-1)\Tasks\01 Get Cohort\results\2023-12-16\Task231122_01_231122_&drug._Event\Task231122_01_231122_&drug._Event.csv" 
         dsd dlm="," firstobs=2 n=200 missover;
-        length ID $ 11 eventtype 8 tmp_EventDate $ 10 tmp_EventDate_tx $ 10 badrx_BCode $ 10 badrx_GCode $ 10 EndOfLine $ 10;
+        length ID $ 12 eventtype 8 tmp_EventDate $ 10 tmp_EventDate_tx $ 10 badrx_BCode $ 10 badrx_GCode $ 10 EndOfLine $ 10;
         input ID $ eventtype ReadCode $ tmp_EventDate $ tmp_EventDate_tx $ badrx_BCode $ badrx_GCode $ EndOfLine $;
     data &outlib..&drug._event; set tmp;
     retain id eventtype eventdate eventdate_tx;

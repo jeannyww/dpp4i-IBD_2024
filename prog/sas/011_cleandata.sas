@@ -31,7 +31,7 @@ option SASAUTOS=(SASAUTOS "D:\Externe Projekte\UNC\wangje\sas\macros");
 
 /*cleanevents*/
 *descrip;
-%macro cleanevents ( Druglist  );
+%macro cleanevents ( Druglist , save= N );
 
 %do i=1 %to %sysfunc(countw(&druglist.));
 %let drug=%scan(&druglist.,&i.);
@@ -40,85 +40,88 @@ data tmpevent_ ; set raw.&drug._event ; run;
 
 proc sort data= tmpevent_; by id eventtype eventdate ; run;
 data tmpevent_wide&drug.;
-    set tmpevent_;
-    by id;
-    length ibd1_code ibd2_code ibd3_code ibd4_code ibd5_code badrx_Bcode badRx_Gcode $ 10; 
-    retain ibd1_dt ibd1_code ibd1
-        ibd2_dt ibd2_code ibd2
-        ibd3_dt ibd3_code ibd3
-        ibd4_dt ibd4tx_dt ibd4_code ibd4
-        ibd5_dt ibd5_code ibd5
-        badrx_dt badrx_Bcode badrx_Gcode
-        death_dt dbexit_dt LastColl_Dt endstudy_dt;
-
-    if first.id then do;
-        ibd1_dt = .; ibd1_code = ""; ibd1 = .;
-        ibd2_dt = .; ibd2_code = ""; ibd2 = .;
-        ibd3_dt = .; ibd3_code = ""; ibd3 = .;
-        ibd4_dt = .; ibd4tx_dt = .; ibd4_code = ""; ibd4 = .;
-        ibd5_dt = .; ibd5_code = ""; ibd5 = .;
-        badrx_dt = .; badrx_Bcode = ""; badrx_Gcode = "";
-        death_dt = .; dbexit_dt = .; LastColl_Dt = .; endstudy_dt = '31DEC2022'd;
-    end;
-
-    if eventtype = 1 then do;
-        ibd1_dt = eventdate;
-        ibd1_code = readcode;
-        ibd1 = 1;
-    end; 
-
-    if eventtype = 2 then do;
-        ibd2_dt = eventdate;
-        ibd2_code = readcode;
-        ibd2 = 1;
-    end; 
-
-    if eventtype = 3 then do;
-        ibd3_dt = eventdate;
-        ibd3_code = readcode;
-        ibd3 = 1;
-    end; 
-
-    if eventtype = 4 then do;
-        ibd4_dt = eventdate;
-        ibd4tx_dt = eventdate;
-        ibd4_code = readcode;
-        ibd4 = 1;
-    end; 
-
-    if eventtype = 5 then do;
-        ibd5_dt = eventdate;
-        ibd5_code = readcode;
-        ibd5 = 1;
-    end; 
-
-    if eventtype = 6 then do;
-        if first.id then do; 
-        badrx_dt = eventdate;
-        badrx_Bcode = badrx_Bcode;
-        badrx_Gcode = badrx_Gcode;
-        badrx=1; 
-        END;
-    end; 
-    if eventtype = 7 then death_dt = eventdate;
-    if eventtype = 8 then dbexit_dt = eventdate;
-    if eventtype = 9 then LastColl_Dt = eventdate;
-    if last.id then output;
-run;
+        set tmpevent_ ;
+        by id eventtype ; 
+        length ibd1_code ibd2_code ibd3_code ibd4_code ibd5_code badrx_Bcode badRx_Gcode $ 10; 
+        retain ibd1_dt ibd1_code ibd1
+            ibd2_dt ibd2_code ibd2
+            ibd3_dt ibd3_code ibd3
+            ibd4_dt ibd4tx_dt ibd4_code ibd4
+            ibd5_dt ibd5_code ibd5
+            badrx_dt badrx_Bcode badrx_Gcode badrx
+            death_dt dbexit_dt LastColl_Dt endstudy_dt;
+        format ibd1_dt ibd2_dt ibd3_dt ibd4_dt ibd4tx_dt ibd5_dt badrx_dt death_dt dbexit_dt LastColl_Dt endstudy_dt date9.;
+    
+        if first.id then do;
+            ibd1_dt = .; ibd1_code = ""; ibd1 = .;
+            ibd2_dt = .; ibd2_code = ""; ibd2 = .;
+            ibd3_dt = .; ibd3_code = ""; ibd3 = .;
+            ibd4_dt = .; ibd4tx_dt = .; ibd4_code = ""; ibd4 = .;
+            ibd5_dt = .; ibd5_code = ""; ibd5 = .;
+            badrx_dt = .; badrx_Bcode = ""; badrx_Gcode = ""; badrx=.;
+            death_dt = .; dbexit_dt = .; LastColl_Dt = .; endstudy_dt = '31DEC2022'd;
+        end;
+    
+        if eventtype = 1 then do;
+            ibd1_dt = eventdate;
+            ibd1_code = readcode;
+            ibd1 = 1;
+        end; 
+    
+        if eventtype = 2 then do;
+            ibd2_dt = eventdate;
+            ibd2_code = readcode;
+            ibd2 = 1;
+        end; 
+    
+        if eventtype = 3 then do;
+            ibd3_dt = eventdate;
+            ibd3_code = readcode;
+            ibd3 = 1;
+        end; 
+    
+        if eventtype = 4 then do;
+            ibd4_dt = eventdate;
+            ibd4tx_dt = eventdate_tx;
+            ibd4_code = readcode;
+            ibd4 = 1;
+        end; 
+    
+        if eventtype = 5 then do;
+            ibd5_dt = eventdate;
+            ibd5_code = readcode;
+            ibd5 = 1;
+        end; 
+    
+        if eventtype = 6 then do;
+            if first.eventtype then do; 
+            badrx_dt = eventdate;
+            badrx_Bcode = badrx_Bcode;
+            badrx_Gcode = badrx_Gcode;
+            badrx=1; 
+            END;
+        end; 
+        if eventtype = 7 then death_dt = eventdate;
+        if eventtype = 8 then dbexit_dt = eventdate;
+        if eventtype = 9 then LastColl_Dt = eventdate;
+        if last.id then output;
+        drop eventtype eventdate readcode eventdate_tx endofline ;
+    run;
+    
 
 
 PROC FREQ DATA=tmpevent_wide&drug.;
     TABLES ibd1-ibd5 ibd1_code ibd2_code ibd3_code ibd4_code ibd5_code /list missing;
     RUN;
 
-/* data raw.&drug._eventwide; set tmpevent_wide&drug.; run; */
-
-%end;
-
+%if &save. = Y %then %do;
+    data raw.&drug._eventwide; set tmpevent_wide&drug.; run;
+    %end;
+%else %do; %end; %end;
 %mend cleanevents;
 
-%LET druglist = dpp4i su ;
-%cleanevents( &druglist. );
+%LET druglist = dpp4i su tzd sglt2i;
+%cleanevents(  druglist=&druglist., save=Y );
 
 
 /* endregion //!SECTION */
@@ -134,17 +137,17 @@ PROC FREQ DATA=tmpevent_wide&drug.;
 
 
 
-%macro get_useperiods ( druglist , grace, washout );
+%macro get_useperiods ( druglist , grace, washout, save= N );
 
-%do i=1 %to %sysfunc(countw(&druglist.));
-    %let drug=%scan(&druglist.,&i.);
+%do z=1 %to %sysfunc(countw(&druglist.));
+    %let drug=%scan(&druglist.,&z.);
     
     data tmptrtmt_; set raw.&drug._trtmt; run;
 
 proc sql;
     create table tmpRx_&drug. as
     select * from 
-        (select a.id, a.rxdate, a.time0, a.history, a.gemscript, a.BCSDP, a.rx_dayssupply, a.&drug., a.SU, a.SGLT2i, a.TZD 
+        (select a.id, a.rxdate, a.time0, a.history, a.gemscript, a.BCSDP, a.rx_dayssupply, a.DPP4i, a.SU, a.SGLT2i, a.TZD 
         from tmptrtmt_ as a ) 
         left join 
         (select * from tmpevent_wide&drug. as b)
@@ -158,15 +161,20 @@ data tmpRx_&drug._; set tmpRx_&drug.;
     
 %useperiods(grace=&primaryGraceP, washout=&washoutp, wpgp=Y, daysimp=0, maxDays=, multiclaim=max,
     inds= %str(tmpRx_&drug._ (where=(&drug.=1))), idvar=id, startenroll=startdt, rxdate=rxdate, endenroll=enddt, dayssup=rx_dayssupply, 
-    keepvars= &keeplist, outds=raw.&drug.useperiods);
+    keepvars= &keeplist, outds=&drug._useperiods);
     
+%if &save. = Y %then %do;
+
+    data raw.&drug._useperiods; set &drug._useperiods; run;
+    %end;
+
 %end;
 %mend get_useperiods;
 
-%LET druglist = dpp4i su ;
+%LET druglist = dpp4i su tzd sglt2i ;
 %LET primaryGracep = 90;
 %LET washoutp = 365;
-%get_useperiods( druglist= &druglist. , grace= &primaryGracep, washout= &washoutp );
+%get_useperiods( druglist= &druglist. , grace= &primaryGracep, washout= &washoutp , save=Y);
 
 
 /* setting impute to 0 because of pascals' existing system to determine days supply:  "information on dosing instructions and duration may be incomplete, I have created an algorithm to fill in missing information as sensibly as possible.	For example, I look at the information from the last prescription. Or I use default values that we have previously determined. Thereby I look at how a medication was most frequently prescribed in the database and then use these values if I have no other information." */

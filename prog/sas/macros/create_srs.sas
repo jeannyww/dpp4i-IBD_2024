@@ -20,7 +20,7 @@ proc sql;
 quit; *the SensitivityA0 dataset has 50891 uniqueIDs;
 
 proc sql outobs=&nsample;
-    create table randid as select * from uniqueids order by ranuni(0);
+    create table randid as select * from uniqueids order by ranuni(12345);
 quit;
 
 /* merging with observations for random ids only selected */

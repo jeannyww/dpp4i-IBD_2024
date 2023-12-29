@@ -26,7 +26,7 @@ option SASAUTOS=(SASAUTOS "D:\Externe Projekte\UNC\wangje\sas\macros");
 %setup(programName=012_createcohorts, savelog=N, dataset=dataname);
 
 
-/* Starting with exclusions box 0 to add sequentially to get all counts  */
+/* Starting with exclusions box 0 to add sequentially to get all counts for each ACNU  */
 data temp.exclusions_box0_all;
     retain exclusion_num long_text; 
     length long_text $200;
@@ -44,9 +44,9 @@ data temp.exclusions_box0_all;
     9|number of unique ids in _treatment dataset|105399|129082|69059|32289
     ;
 run;
-data temp.exclusions_dpp4i_su; set temp.exclusions_box0; keep exclusion_num long_text dpp4i su full; run;
-data temp.exclusions_dpp4i_tzd; set temp.exclusions_box0; keep exclusion_num long_text dpp4i tzd full; run;
-data temp.exclusions_dpp4i_sglt2i; set temp.exclusions_box0; keep exclusion_num long_text dpp4i sglt2i full; run;
+data temp.exclusions_dpp4i_su; set temp.exclusions_box0_all; keep exclusion_num long_text dpp4i su full; run;
+data temp.exclusions_dpp4i_tzd; set temp.exclusions_box0_all; keep exclusion_num long_text dpp4i tzd full; run;
+data temp.exclusions_dpp4i_sglt2i; set temp.exclusions_box0_all; keep exclusion_num long_text dpp4i sglt2i full; run;
 
 
 /* get periods of new use for visaversa comparisons  */
@@ -63,7 +63,7 @@ data temp.exclusions_dpp4i_sglt2i; set temp.exclusions_box0; keep exclusion_num 
         from useperiods_&drug1.(where= (newuse=1) rename=(reason=reason1)) as a
         LEFT JOIN useperiods_&drug2. as b on a.id=b.id group by a.id, a.indexdate; 
         
-        create table new_&drug1. (drop=newuse reason1 ) as
+        create table new_&drug1. as
         select distinct a.* , min(b.indexdate) as switchAugmentdate format=date9. label='DATE OF SWITCH/AUGMENTATION' 
         from tmp_exclude as a 
         LEFT JOIN useperiods_&drug2. as b on a.id=b.id and a.indexdate<=b.indexdate<= a.discontDate
@@ -80,7 +80,10 @@ data temp.exclusions_dpp4i_sglt2i; set temp.exclusions_box0; keep exclusion_num 
 /* loop through each exposure comparator combination */
 %do i=1 %to %sysfunc(countw(&comparatorlist.));
     %let comparator = %scan(&comparatorlist.,&i.);
-    /* get counts for study flowchart and store into temp table */
+    /* Get new use for exposure and comparator drug visaversa */
+    %newuse ( &exposure , &comparator, 365 );
+    %newuse ( &comparator , &exposure, 365 );
+    /* get counts for use periods part of study flowchart and store into temp table */
     PROC SQL noprint; 
         CREATE TABLE tmp_id_counts AS SELECT *  FROM temp.exclusions_dpp4i_&comparator.;
         select count(*) into :num_obs from tmp_id_counts;
@@ -92,10 +95,7 @@ data temp.exclusions_dpp4i_sglt2i; set temp.exclusions_box0; keep exclusion_num 
         dpp4i = &nobs1,
         &comparator. = &nobs2;    
     QUIT;
-    /* Get new use for exposure and comparator drug visaversa */
-    %newuse ( &exposure , &comparator, 365 );
-    %newuse ( &comparator , &exposure, 365 );
-    /* get counts for study flowchart and store in temp table */
+    /* get counts for new users part of study flowchart and store in temp table */
     proc sql noprint;
         select count(*) into :num_obs from tmp_id_counts;
         select count(distinct id ) into :nobs3 from new_&exposure.;

@@ -12,7 +12,7 @@ Last Modified: 26DEC2024
             libname temp D:\Externe Projekte\UNC\wangje\data\temp
 
     Input paths:
-                original raw data:  D:\Externe Projekte\UNC\Task231122 - IBDandDPP4I (db23-1)\Tasks\01 Get Cohort\results\2023-12-16
+                original temp data:  D:\Externe Projekte\UNC\Task231122 - IBDandDPP4I (db23-1)\Tasks\01 Get Cohort\results\2023-12-16
             libname a  D:\Externe Projekte\UNC\wangje\data\analysis
 Other details: CPRD-DPP4i project in collaboration with USB
 
@@ -29,25 +29,25 @@ option SASAUTOS=(SASAUTOS "D:\Externe Projekte\UNC\wangje\sas\macros");
 %LET drug = dpp4i;
 %LET nsample = 1000;
 /* get srs of ids to test  */
-proc sql; create table uniqueids as select distinct id from raw.&drug._eventwide; 
+proc sql; create table uniqueids as select distinct id from temp.&drug._eventwide; 
     quit; 
     /* repeat and replace with different seeds to randomly check ids */
 proc sql outobs=&nsample; 
     create table randids as select * from uniqueids order by ranuni(12345);
 quit;
 proc sql; 
-/* load RAW drug exposure information from _demog dataset  */
+/* load temp drug exposure information from _demog dataset  */
 create table _trtmt as select a.id, a.rxdate, a.time0, a.history, a.gemscript, a.BCSDP, a.rx_dayssupply, a.DPP4i, a.SU, a.SGLT2i, a.TZD  from randids as b
 inner join raw.&drug._trtmt as a on a.id=b.id;
 /* load use period information from _useperiod dataset   */
 create table _useperiods as select * from randids as b
-inner join raw.&drug._useperiods as a on a.id=b.id;
+inner join temp.&drug._useperiods as a on a.id=b.id;
 /* load event information from _event dataset   */
 create table _event as select * from randids as b
 inner join raw.&drug._event as a on a.id=b.id;
 /* load wide event information from _eventwide dataset  */
 create table _eventwide as select * from randids as b
-inner join raw.&drug._eventwide as a on a.id=b.id;
+inner join temp.&drug._eventwide as a on a.id=b.id;
 quit;
 
 /* troubleshooting the useperiods creation ; trouble shooting is complete */

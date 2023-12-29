@@ -39,7 +39,7 @@ option SASAUTOS=(SASAUTOS "D:\Externe Projekte\UNC\wangje\sas\macros");
 data tmpevent_ ; set raw.&drug._event ; run;
 
 proc sort data= tmpevent_; by id eventtype eventdate ; run;
-data tmpevent_wide&drug.;
+data _tmpevent_wide&drug.;
         set tmpevent_ ;
         by id eventtype ; 
         length ibd1_code ibd2_code ibd3_code ibd4_code ibd5_code badrx_Bcode badRx_Gcode $ 10; 
@@ -108,14 +108,14 @@ data tmpevent_wide&drug.;
         drop eventtype eventdate readcode eventdate_tx endofline ;
     run;
     
-
-
-PROC FREQ DATA=tmpevent_wide&drug.;
-    TABLES ibd1-ibd5 ibd1_code ibd2_code ibd3_code ibd4_code ibd5_code /list missing;
-    RUN;
+    PROC SQL; 
+        create table tmpevent_wide&drug. as select distinct a.*, b.time0 from _tmpevent_wide&drug. as a 
+        inner join raw.&drug._trtmt as b on a.id = b.id;
+    QUIT;
+    
 
 %if &save. = Y %then %do;
-    data raw.&drug._eventwide; set tmpevent_wide&drug.; run;
+    data temp.&drug._eventwide; set tmpevent_wide&drug.; run;
     %end;
 %else %do; %end; %end;
 %mend cleanevents;
@@ -165,7 +165,7 @@ data tmpRx_&drug._; set tmpRx_&drug.;
     
 %if &save. = Y %then %do;
 
-    data raw.&drug._useperiods; set &drug._useperiods; run;
+    data temp.&drug._useperiods; set &drug._useperiods; run;
     %end;
 
 %end;
@@ -197,7 +197,7 @@ data tmpRx_&drug._; set tmpRx_&drug.;
     select count(unique id) as n from tmpDemog_&drug._; quit;
 
 /* eliminate duplicates from the demog dataset */
-proc sort data=tmpDemog_&drug._ out=raw.&drug._demog nodupkey;
+proc sort data=tmpDemog_&drug._ out=temp.&drug._demog nodupkey;
     by id time0 age sex smoke smoketime height heighttime weight weighttime bmi bmitime alc alctime alcunit alcavg hba1c hba1ctime hba1cno hba1cavg history GPyearDx GPyearDxRx Alc_P_bc Alc_P_bl colo_bc colo_bl IBD_P_bc IBD_P_bl DivCol_I_bc DivCol_I_bl DivCol_P_bc DivCol_P_bl PCOS_bc PCOS_bl DiabGest_bc DiabGest_bl IBD_I_bc IBD_I_bl asthma_bc asthma_bl copd_bc copd_bl arrhyth_bc arrhyth_bl chf_bc chf_bl ihd_bc ihd_bl mi_bc mi_bl hyperten_bc hyperten_bl stroke_bc stroke_bl hyperlip_bc hyperlip_bl diab_bc diab_bl dvt_bc dvt_bl pe_bc pe_bl gout_bc 
     gout_bl pthyro_bc pthyro_bl mthyro_bc mthyro_bl depres_bc depres_bl affect_bc affect_bl suic_bc suic_bl sleep_bc sleep_bl schizo_bc schizo_bl epilep_bc epilep_bl renal_bc renal_bl GIulcer_bc GIulcer_bl RhArth_bc RhArth_bl alrhi_bc alrhi_bl glauco_bc glauco_bl migra_bc migra_bl sepsis_bc sepsis_bl pneumo_bc pneumo_bl nephr_bc nephr_bl nerop_bc nerop_bl dret_bc dret_bl psorI_bc psorI_bl psorP_bc psorP_bl vasc_bc vasc_bl SjSy_bc SjSy_bl sLup_bc sLup_bl PerArtD_bc PerArtD_bl AbdPain_bc AbdPain_bl Diarr_bc Diarr_bl BkStool_bc BkStool_bl Crohns_bc 
     Crohns_bl Ucolitis_bc Ucolitis_bl Icomitis_bc Icomitis_bl Gastent_bc Gastent_bl ColIle_bc ColIle_bl Sigmo_bc Sigmo_bl Biops_bc Biops_bl Ileo_bc Ileo_bl HBA1c_bc HBA1c_bl DPP4i_bc DPP4i_gc DPP4i_bl DPP4i_tot1yr SU_bc SU_gc SU_bl SU_tot1yr SGLT2i_bc SGLT2i_gc SGLT2i_bl SGLT2i_tot1yr TZD_bc TZD_gc TZD_bl TZD_tot1yr Insulin_bc Insulin_gc Insulin_bl Insulin_tot1yr bigua_bc bigua_gc bigua_bl bigua_tot1yr prand_bc prand_gc prand_bl prand_tot1yr agluco_bc agluco_gc agluco_bl agluco_tot1yr OAntGLP_bc OAntGLP_gc OAntGLP_bl OAntGLP_tot1yr AminoS_bc 
@@ -209,7 +209,7 @@ proc sort data=tmpDemog_&drug._ out=raw.&drug._demog nodupkey;
     aconvu_tot1yr isupp_bc isupp_gc isupp_bl isupp_tot1yr TnfAI_bc TnfAI_gc TnfAI_bl TnfAI_tot1yr Budeo_bc Budeo_gc Budeo_bl Budeo_tot1yr OtherImm_bc OtherImm_gc OtherImm_bl OtherImm_tot1yr CycloSpor_bc CycloSpor_gc CycloSpor_bl CycloSpor_tot1yr Iso_oral_bc Iso_oral_gc Iso_oral_bl Iso_oral_tot1yr Iso_top_bc Iso_top_gc Iso_top_bl Iso_top_tot1yr Myco_bc Myco_gc Myco_bl Myco_tot1yr Etan_bc Etan_gc Etan_bl Etan_tot1yr Ipili_bc Ipili_gc Ipili_bl Ipili_tot1yr Ritux_bc Ritux_gc Ritux_bl Ritux_tot1yr EndOfLine  ;
 run;
 proc sql;
-select count(unique id) as n from raw.&drug._demog; quit;
+select count(unique id) as n from temp.&drug._demog; quit;
 /* tmpDemog_&drug. is our demographic variables dataset that we will merge into the analysis dataset when we are done */
 %end;
 %mend;

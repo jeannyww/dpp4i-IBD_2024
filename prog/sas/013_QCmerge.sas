@@ -27,6 +27,55 @@ option SASAUTOS=(SASAUTOS "D:\Externe Projekte\UNC\wangje\sas\macros");
 %setup(programName=merge, savelog=N, dataset=dataname);
 
 /*===================================*\
+//SECTION - Creating labels for dataset
+\*===================================*/
+/* region */
+/*label*/
+*to label the dataset with the variable labels;
+
+/* Use PROC IMPORT to read the CSV file */
+
+data varlabs; 
+    infile "D:\Externe Projekte\UNC\wangje\ref\labels_v11.csv" dsd missover firstobs=2;
+    length codelistname $ 20 codetype $ 20 filenames $ 100;
+    input codelistname $ codetype $ filenames $;
+run;
+data varlabs; set varlabs; 
+label1= tranwrd(filenames, ".txt", "");
+RUN;
+proc print data= varlabs; run;
+
+PROC SQL; 
+    select codelistname into :varslist separated by " " from varlabs  ;
+    select codelistname into :typelist separated by " " from varlabs  ;
+    select label1 into :labellist separated by "|" from varlabs where codetype eq "Read" ;
+QUIT;
+%put &varslist.;
+%put &typelist.;
+%put &labellist.;
+%macro label ( varlist , labellist, typelist );
+    %do i=1 %to %sysfunc(countw(&varlist));
+    %let var=%scan(&varlist,&i, " ");
+    %LET type = %scan(&typelist, &i, " ");
+    %LET lab = %scan(&labellist, &i, "|");
+
+    %if &type eq read %then %do;
+    label &var._bc ="Last &lab. read code prior to (excluding) time0";
+    label &var._bl ="Days between last &lab. Rx prior to (excluding) time0";
+    %end; %else %do;
+    label &var._bc ="Last BDSCP code of &lab. Rx prior to (excluding) time0";
+    label &var._gl ="Last gemscript code of &lab. Rx prior to (excluding) time0";
+    label &var._bl ="Days between last &lab. Rx prior to (excluding) time0";
+    label &var._tot1yr ="No. &lab. prescriptions within 365d prior to time0";
+    %end;
+%mend label;
+
+data tmp1; set temp.allmerged_&exposure._&comparator.; 
+    %label(&varslist., &labellist., &typelist.);
+    
+    run;
+/* endregion //!SECTION */
+/*===================================*\
 //SECTION - testing 28DEC2024
 \*===================================*/
 /* region */

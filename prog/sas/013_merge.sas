@@ -45,7 +45,7 @@ proc print data= varlabs; run;
 PROC SQL noprint; 
     select codelistname into :varslist separated by " " from varlabs  ;
     select codetype into :typelist separated by " " from varlabs  ;
-    select label1 into :labellist separated by "|" from varlabs where codetype eq "Read" ;
+    select label1 into :labellist separated by "|" from varlabs ;
 QUIT;
 /* verify */
 %put &varslist.;
@@ -55,19 +55,32 @@ QUIT;
 /* macro to iteratively label baseline variables from the label list */
 %macro label ( varlist , labellist, typelist );
     %do i=1 %to %sysfunc(countw(&varlist));
-    %let var=%scan(&varlist,&i, " ");
-    %LET type = %scan(&typelist, &i, " ");
-    %LET lab = %scan(&labellist, &i, "|");
-    
-    %if &type eq Read %then %do;
-    label &var._bc ="Last &lab. read code prior to (excluding) time0";
-    label &var._bl ="Days between last &lab. Rx prior to (excluding) time0";
-    %end; %else %do;
-    label &var._bc ="Last BDSCP code of &lab. Rx prior to (excluding) time0";
-    label &var._gc ="Last gemscript code of &lab. Rx prior to (excluding) time0";
-    label &var._bl ="Days between last &lab. Rx prior to (excluding) time0";
-    label &var._tot1yr ="No. &lab. prescriptions within 365d prior to time0";
-    %end;
+        %let var=%scan(&varlist,&i, " ");
+        %LET type = %scan(&typelist, &i, " ");
+        %LET lab =%scan(&labellist, &i, "|");
+        
+        &var._1yrlookback=.;        
+        if &var._bl in (0, .) then &var._1yrlookback=0;
+        else if (&var._bl>=1 and &var._bl<=365) then &var._1yrlookback=1;
+
+        &var._ever=.; 
+        if &var._bl in (0, .) then &var._ever=0;
+        else if (&var._bl>=1) then &var._ever=1;
+        
+        %if &type eq Read %then %do;
+        label &var._bc ="Last &lab. read code prior to (excluding) time0";
+        label &var._bl ="Days between last &lab. Rx prior to (excluding) time0";
+        label &var._1yrlookback = "&lab. read code within 365d prior to time0";
+        label &var._ever = "&lab. read code ever prior to time0 using all lookback";
+        
+        %end; %else %do;
+        label &var._bc ="Last BDSCP code of &lab. Rx prior to (excluding) time0";
+        label &var._gc ="Last gemscript code of &lab. Rx prior to (excluding) time0";
+        label &var._bl ="Days between last &lab. Rx prior to (excluding) time0";
+        label &var._tot1yr ="No. &lab. prescriptions within 365d prior to time0";
+        label &var._1yrlookback = "&lab. Rx within 365d prior to time0";
+        label &var._ever = "&lab. Rx ever prior to time0 using all lookback";
+        %end;
     %end;
     %mend label;
     /* macro to merge outcome, drug class, and baseline vars, adding labels */    
@@ -197,6 +210,7 @@ proc print data=temp.exclusions_012_&exposure._&comparator.; run;
     label history="Number of days of recorded history in the database prior to the time0 (the number of days between the first prescription in the patients’ profile and the time0, historical entries prior 1987 are ignored).";
     label GPyearDx="Practice visits last year based on diagnoses = number of practice visits in the 365 days immediately prior to the time0 (count only visits at separate dates)";
     label GPyearDxRx="Practice visits last year based on diagnoses and prescriptions = number of practice visits in the 365 days immediately prior to the time0 (count only visits at separate dates)";
+    
     run;
     /* If save=y then save to temp library for retreival later  */
     %if &save=Y %then %do; 
@@ -219,6 +233,29 @@ proc print data=temp.exclusions_012_&exposure._&comparator.; run;
 
 %LET comparatorlist = su tzd sglt2i;
 %mergeall(exposure=dpp4i, comparatorlist=&comparatorlist., primaryGraceP=90, washoutp=365, save=Y);
+
+/* getting a preliminary proc contents from which to draw analysis dataset from */
+ods excel file="&toutpath./Merged_full_contentsandcounts.xlsx"
+options (
+    Sheet_interval="PROC" /* PROC | TABLE | NONE */
+    embedded_titles="NO"
+    embedded_footnotes="NO"
+);
+ods excel options(sheet_name="dpp4i_su contents" sheet_interval="NOW");
+proc contents data= temp.allmerged_dpp4i_su varnum; run;
+ods excel options(sheet_name="dpp4i_su counts" sheet_interval="NOW");
+proc print data=temp.exclusions_013_dpp4i_su; run;
+ods excel options(sheet_name="dpp4i_tzd contents" sheet_interval="NOW");
+proc contents data= temp.allmerged_dpp4i_tzd varnum; run;
+ods excel options(sheet_name="dpp4i_tzd counts" sheet_interval="NOW");
+proc print data=temp.exclusions_013_dpp4i_tzd; run;
+ods text="NOTE: no exclusions yet made for heart failure";
+ods excel options(sheet_name="dpp4i_sglt2i contents" sheet_interval="NOW");
+proc contents data= temp.allmerged_dpp4i_sglt2i varnum; run;
+ods excel options(sheet_name="dpp4i_sglt2i counts" sheet_interval="NOW");
+proc print data= temp.exclusions_013_dpp4i_sglt2i; run;
+ods text="NOTE: no exclusions yet made for year 2012 onwards";
+ods excel close;
 
 /* endregion //!SECTION */
 

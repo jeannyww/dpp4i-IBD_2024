@@ -5,23 +5,24 @@ Purpose: To clean the respective data into one obs per unique id for analysis an
 Author: JHW
 Creation Date:  Todays date: 2023-12-20 
 
-    Program and output path:
-            D:\Externe Projekte\UNC\wangje\sas
-            D:\Externe Projekte\UNC\wangje\sas\prog
-            libname temp D:\Externe Projekte\UNC\wangje\data\temp
+Output, programs (general &goutpath., tables &toutpath., and figures &foutpath.):
+        D:\Externe Projekte\UNC\wangje\out
+        D:\Externe Projekte\UNC\wangje\prog\sas
 
-    Input paths:
+Input paths:
             original raw data:  D:\Externe Projekte\UNC\Task231122 - IBDandDPP4I (db23-1)\Tasks\01 Get Cohort\results\2023-12-16
             libname a  D:\Externe Projekte\UNC\wangje\data\analysis
+            libname raw  D:\Externe Projekte\UNC\wangje\data\raw
+            libname temp  D:\Externe Projekte\UNC\wangje\data\temp
 Other details: CPRD-DPP4i project in collaboration with USB
 
-CHANGES: see git 
-Date: Date of Change
-Notes: Change Notes
+CHANGES:
+Date: see git 
+Notes: etc
 ***************************************/
 options nofmterr pageno=1 fullstimer stimer stimefmt=z compress=yes ;
 options macrogen symbolgen mlogic mprint mcompile mcompilenote=all; option MAUTOSOURCE;
-option SASAUTOS=(SASAUTOS "D:\Externe Projekte\UNC\wangje\sas\macros");
+option SASAUTOS=(SASAUTOS "D:\Externe Projekte\UNC\wangje\prog\sas\macros");
 %setup(programName=011_cleandata.sas, savelog=N, dataset=dataname);
 
 /*===================================*\

@@ -1,17 +1,20 @@
 /***************************************
- SAS file name: 0_readdata.sas
+SAS file name: 0_readdata.sas
 
 Purpose: for reading in V2 of dataset 
 Author: JHW
 Creation Date: Created on 2023-12-16 05:36:00
 Task231122 - IBDandDPP4I (db23-1)
 
-    Program and output path:
-            D:\Externe Projekte\UNC\wangje\sas
-                D:\Externe Projekte\UNC\wangje\sas\prog
-            libname temp D:\Externe Projekte\UNC\wangje\data\temp
+Output, programs (general &goutpath., tables &toutpath., and figures &foutpath.):
+        D:\Externe Projekte\UNC\wangje\out
+        D:\Externe Projekte\UNC\wangje\prog\sas
 
-    Input paths:
+Input paths:
+            original raw data:  D:\Externe Projekte\UNC\Task231122 - IBDandDPP4I (db23-1)\Tasks\01 Get Cohort\results\2023-12-16
+            libname a  D:\Externe Projekte\UNC\wangje\data\analysis
+            libname raw  D:\Externe Projekte\UNC\wangje\data\raw
+            libname temp  D:\Externe Projekte\UNC\wangje\data\temp
 
 Current request:
 D:\Externe Projekte\UNC\Task231122 - IBDandDPP4I (db23-1)\Requests\2023-12-12 UNC Clean Request, New List\ Request for IBD and DPP4I-2023-12-14_V11 jw.docx
@@ -19,13 +22,11 @@ D:\Externe Projekte\UNC\Task231122 - IBDandDPP4I (db23-1)\Requests\2023-12-12 UN
 Used  code lists:
 D:\External Projects\UNC\Task231122 - IBDandDPP4I (db23-1)\Codes\Lists_IBDandDPP4I_008.listler
 
-General results:
+General results:  
+*   Event*, *Treatment*  CSV files
 D:\External Projects\UNC \Task231122 - IBDandDPP4I (db23-1)\Tasks\01 Get Cohort\results\2023-12-16\
-
-
-  *   Task231122_01_231122_001.log                 Contains information on all code lists.
-  *   Task231122_01_231122_Report.txt             Numbers collected during the creation of the study populations.
-  *   Event*, *Treatment*                                    CSV files
+*   Task231122_01_231122_001.log - Contains information on all code lists.
+*   Task231122_01_231122_Report.txt  - Numbers collected during the creation of the study populations.
 
 
     Other details: CPRD-DPP4i project in collaboration with USB
@@ -34,9 +35,11 @@ CHANGES: see github repo
 Date: 2023-12-16 05:36:00
 Notes: Cleaned up for macroprocessing 
 ***************************************/
+
 options nofmterr pageno=1 fullstimer stimer stimefmt=z compress=yes ;
 options macrogen symbolgen mlogic mprint mcompile mcompilenote=all; option MAUTOSOURCE;
-option SASAUTOS=(SASAUTOS "D:\Externe Projekte\UNC\wangje\sas\macros");
+
+option SASAUTOS=(SASAUTOS "D:\Externe Projekte\UNC\wangje\prog\sas\macros");
 %setup(programName=0_readdata.sas, savelog=N, dataset= );
 
 /*===================================*\

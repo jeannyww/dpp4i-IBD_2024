@@ -1,16 +1,15 @@
 /***************************************
-SAS file name: 015_runanalysis.sas
+SAS file name: 016_runanalysis.sas
 
-Purpose: To create and run T2 analyses for each ACNU
+Purpose: To run main analysis for each ACNU cohort
 Author: JHW
 Creation Date: 2024-01-09
 
-    Program and output path:
-        D:\Externe Projekte\UNC\wangje\sas
-        D:\Externe Projekte\UNC\wangje\sas\prog
-        libname temp D:\Externe Projekte\UNC\wangje\data\temp
+Output, programs (general &goutpath., tables &toutpath., and figures &foutpath.):
+        D:\Externe Projekte\UNC\wangje\out
+        D:\Externe Projekte\UNC\wangje\prog\sas
 
-    Input paths:
+Input paths:
             original raw data:  D:\Externe Projekte\UNC\Task231122 - IBDandDPP4I (db23-1)\Tasks\01 Get Cohort\results\2023-12-16
             libname a  D:\Externe Projekte\UNC\wangje\data\analysis
             libname raw  D:\Externe Projekte\UNC\wangje\data\raw
@@ -18,15 +17,24 @@ Creation Date: 2024-01-09
 Other details: CPRD-DPP4i project in collaboration with USB
 
 CHANGES:
-Date: 2024-01-09
-Notes: Change Notes
+Date: see git 
+Notes: etc
 ***************************************/
 options nofmterr pageno=1 fullstimer stimer stimefmt=z compress=yes ;
 options macrogen symbolgen mlogic mprint mcompile mcompilenote=all; option MAUTOSOURCE;
-option SASAUTOS=(SASAUTOS "D:\Externe Projekte\UNC\wangje\sas\macros");
-%setup(programName=015_runanalysis, savelog=N, dataset=tmp);
+option SASAUTOS=(SASAUTOS "D:\Externe Projekte\UNC\wangje\prog\sas\macros");
+%setup(programName=016_runanalysis, savelog=N, dataset=tmp);
 
 
+
+
+
+
+proc template; define style mystyle;
+    parent=styles.sasweb;
+        class graphwalls /frameborder=off;
+        class graphbackground / color=white;
+    end;run;
 /*---------------------------------------------------------------------
 %analysis(
 exposure =  ,   *exposure drug of interest: DPP4i;
@@ -67,6 +75,19 @@ outtime =  ,      *time which analysis fu ends, ie for AT: '31Dec2017'd, for ITT
     proc print data=tmp;
     run;
 
+*tmp assignment for macro testing;
+    %LET exposure = dpp4i;
+    %let comparator=tzd;
+    %LET ana_name = mainIT;
+    %let type= IT;
+    %let weight=smrw;
+    %let induction=180;
+    %let latency=180;
+    %let ibd_def=ibd1;
+    %let intime= filldate2 ;
+    %let outtime= '31DEC2022'd ;
+    %let outdata= IT;
+
 /* endregion //!SECTION */
 
 %macro analysis ( exposure , comparator , ana_name , type , weight , induction , latency , ibd_def , 
@@ -76,17 +97,6 @@ intime , outtime , outdata );
 //SECTION - Setting up data for analysis 
 \*===================================*/
 /* region */
-
-%LET exposure = dpp4i;
-%let comparator=tzd;
-%let type= IT;
-%let weight=smrw;
-%let induction=180;
-%let latency=180;
-%let ibd_def=ibd1;
-%let intime= filldate2 ;
-%let outtime= '31DEC2022'd ;
-%let outdata= IT;
 
 data dsn; set a.ps_&exposure._&comparator;
     drop Alc_P_bc Alc_P_bl colo_bc colo_bl IBD_P_bc IBD_P_bl DivCol_I_bc DivCol_I_bl DivCol_P_bc DivCol_P_bl PCOS_bc PCOS_bl DiabGest_bc DiabGest_bl IBD_I_bc IBD_I_bl asthma_bc asthma_bl copd_bc copd_bl arrhyth_bc arrhyth_bl chf_bc chf_bl ihd_bc ihd_bl mi_bc mi_bl hyperten_bc hyperten_bl stroke_bc stroke_bl hyperlip_bc hyperlip_bl diab_bc diab_bl dvt_bc dvt_bl pe_bc pe_bl gout_bc 
@@ -136,9 +146,11 @@ data dsn; set a.ps_&exposure._&comparator;
     *Removing individuals who did not reach the induction period for followup ;
     if &type in ('AT', 'IT') then enddatedelete=min( &ibd_def, endEnrol,endofstudy, &outtime);  
     IF enddatedelete<=(&intime + &induction) then delete; 
-    IF enddate>(&intime + &induction) and enddate=&ibd_def._dt and &ibd_def ne . then event=1; else event=0;
+    IF enddate>(&intime + &induction) and enddate=&ibd_def._dt and &ibd_def ne .    then event=1; else event=0;
+
     time=(enddate-(&intime.+&induction)+1)/365.25;
     time_drugdur=(min(rxchange, enddate)-(&intime.+1))/365.25;
+
     if time>0 then logtime=(log(time/100000))  ;
     else time=.;
     label time = "person-years" time_drugdur= "duration of treatment";
@@ -151,16 +163,16 @@ RUN;
 /* median time of followup */
 ods output summary=mediantime;
 proc means data = dsn STACKODS N NMISS SUM MEAN STD MIN MAX Q1 MEDIAN Q3;
-    where time_&type ne .; 
+    where time ne .; 
     class &exposure;
-    var time_&type ;
+    var time ;
 run;
 
 ods output summary=mediantimedu;
 proc means data = dsn STACKODS N NMISS SUM MEAN STD MIN MAX Q1 MEDIAN Q3;
-    where time_&type ne .; 
+    where time ne .; 
     class &exposure;
-    var  timedu_&type;
+    var  time_drugdur;
 run;
 
 data mediantime(keep=&exposure NMISS Nobs mediantime sum );			
@@ -183,9 +195,9 @@ run;
 /* count numbers of event  */
 ods output summary=event;
 Proc means data=dsn sum stackods;
-    where time_&type ne .; 
+    where time ne .; 
     class &exposure;
-    var caco_&type;
+    var event;
 run;
 
 /* endregion //!SECTION */
@@ -197,9 +209,9 @@ proc sort data=dsn;
 	by &exposure; 
 run;
 
-%LET event = caco_&type;
-%LET logtimevar = logtime_&type;
-%LET timevar = time_&type;
+%LET event = event;
+%LET logtimevar = logtime;
+%LET timevar = time;
     proc genmod data=dsn;
     by &exposure;
     * class id;
@@ -327,18 +339,6 @@ merge exp(rename=(risk=&exposure._risk risk_lower=&exposure._lower risk_upper=&e
 by &timevar;
 run;
 
-
-proc template;
-define style mystyle;
-parent=styles.sasweb;
-    class graphwalls / 
-            frameborder=off;
-    class graphbackground / 
-            color=white;
-end;
-run;
-
-
 PROC SGPLOT DATA = plot NOAUTOLEGEND DESCRIPTION=""; 
 YAXIS LABEL = 'Risk of Inflammatory Bowel Disease' LABELATTRS=(size=13pt weight=bold)  VALUES = (0 TO 0.0045 BY 0.0005) valueattrs=(size=12pt); 
 XAXIS LABEL = 'Follow-up Time (years)' 		    LABELATTRS=(size=13pt weight=bold)  VALUES = (0 TO 4 BY 0.5) valueattrs=(size=12pt); 
@@ -389,9 +389,8 @@ id fu_year; run;
 proc print data= tmp  ;  variables drug fuyear:;
 run; 
 
-
-
 /* endregion //!SECTION */
+%mend analysis;
 /* endregion //!SECTION */
 
 

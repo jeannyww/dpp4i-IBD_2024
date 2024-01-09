@@ -5,12 +5,11 @@ Purpose: to create analysis datasets and track all exclusions made for each ACNU
 Author: JHW
 Creation Date: 2024-01-07
 
-    Program and output path:
-        D:\Externe Projekte\UNC\wangje\sas
-        D:\Externe Projekte\UNC\wangje\sas\prog
-        libname temp D:\Externe Projekte\UNC\wangje\data\temp
+Output, programs (general &goutpath., tables &toutpath., and figures &foutpath.):
+        D:\Externe Projekte\UNC\wangje\out
+        D:\Externe Projekte\UNC\wangje\prog\sas
 
-    Input paths:
+Input paths:
             original raw data:  D:\Externe Projekte\UNC\Task231122 - IBDandDPP4I (db23-1)\Tasks\01 Get Cohort\results\2023-12-16
             libname a  D:\Externe Projekte\UNC\wangje\data\analysis
             libname raw  D:\Externe Projekte\UNC\wangje\data\raw
@@ -19,12 +18,12 @@ Other details: CPRD-DPP4i project in collaboration with USB
 
 CHANGES:
 Date: see git 
-Notes: 
+Notes: etc
 ***************************************/
 dm 'autopop on; wsave;';  dm 'next explorer; detail'; dm 'keydef F2 ''next explorer; refresh''';
 options nofmterr pageno=1 fullstimer stimer stimefmt=z compress=yes ;
 options macrogen symbolgen mlogic mprint mcompile mcompilenote=all; option MAUTOSOURCE;
-option SASAUTOS=(SASAUTOS "D:\Externe Projekte\UNC\wangje\sas\macros");
+option SASAUTOS=(SASAUTOS "D:\Externe Projekte\UNC\wangje\prog\sas\macros");
 %setup(programName=clean, savelog=N, dataset=dataname);
 
 %macro createana(exposure=, comparatorlist=, save=N);

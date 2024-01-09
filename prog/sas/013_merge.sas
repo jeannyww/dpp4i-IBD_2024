@@ -62,6 +62,7 @@ QUIT;
         &var._1yrlookback=.;        
         if &var._bl in (0, .) then &var._1yrlookback=0;
         else if (&var._bl>=1 and &var._bl<=365) then &var._1yrlookback=1;
+        else if (&var._bl>365) then &var._1yrlookback=0;
 
         &var._ever=.; 
         if &var._bl in (0, .) then &var._ever=0;
@@ -69,11 +70,15 @@ QUIT;
         
         %if &type eq Read %then %do;
         label &var._bc ="Last &lab. read code prior to (excluding) time0";
-        label &var._bl ="Days between last &lab. Rx prior to (excluding) time0";
+        label &var._bl ="Days between last &lab. read code prior to (excluding) time0";
         label &var._1yrlookback = "&lab. read code within 365d prior to time0";
         label &var._ever = "&lab. read code ever prior to time0 using all lookback";
         
         %end; %else %do;
+        &var._1yrlookback=.;        
+        if &var._tot1yr in (0, .) then &var._1yrlookback=0;
+        else if (&var._tot1yr>=1 ) then &var._1yrlookback=1;
+
         label &var._bc ="Last BDSCP code of &lab. Rx prior to (excluding) time0";
         label &var._gc ="Last gemscript code of &lab. Rx prior to (excluding) time0";
         label &var._bl ="Days between last &lab. Rx prior to (excluding) time0";
@@ -210,7 +215,60 @@ proc print data=temp.exclusions_012_&exposure._&comparator.; run;
     label history="Number of days of recorded history in the database prior to the time0 (the number of days between the first prescription in the patients’ profile and the time0, historical entries prior 1987 are ignored).";
     label GPyearDx="Practice visits last year based on diagnoses = number of practice visits in the 365 days immediately prior to the time0 (count only visits at separate dates)";
     label GPyearDxRx="Practice visits last year based on diagnoses and prescriptions = number of practice visits in the 365 days immediately prior to the time0 (count only visits at separate dates)";
-    
+    /* Baseline vars- crude  */
+        /* HBa1c is in mmol per mol, */
+        hba1c_cat=.;
+        if hba1ctime<365.25 then do;
+            if hba1c le 53 then hba1c_cat=1; /* 7% ~ 53 mmol per mol  */
+            else if hba1c gt 53 and hba1c le 64 then hba1c_cat=2 ; /* 8% ~ 64 mmol per mol */
+            else if hba1c gt 64 then hba1c_cat=3; /* gt 8% or 64 mmol per mol  */
+            end;
+        hba1c_cat2= hba1c_cat; 
+            if hba1c_cat eq . then hba1c_cat2=4;
+            format hba1c_cat2 hba1cf.; 
+        /* BMI */
+        bmi_cat=.;
+        if bmitime<365 then do;
+            if bmi<25 then bmi_cat=1;
+            else if bmi ge 25 and bmi lt 30 then bmi_cat=2;
+            else if bmi ge 30 then bmi_cat=3;
+            end;
+            bmi_cat2= bmi_cat; 
+            if bmi_cat eq . then bmi_cat2=4;
+            format bmi_cat2 bmif.; 
+        /* creating additional variables for Table 1/rest of analysis */
+        /* creating year of cohort entry */
+        entry_year=year(time0);
+        /* ETOH */
+        alcohol_cat='u';
+        if alctime<365 then do;
+            alcohol_cat=alc;
+        end;
+        /* smoking */
+        smoke_cat='u';
+        if smoketime<365 then do;
+            smoke_cat=smoke;
+        end;
+        /* HBa1c is in mmol per mol, */
+        hba1c_cat=.;
+        if hba1ctime<365.25 then do;
+            if hba1c le 53 then hba1c_cat=1; /* 7% ~ 53 mmol per mol  */
+            else if hba1c gt 53 and hba1c le 64 then hba1c_cat=2 ; /* 8% ~ 64 mmol per mol */
+            else if hba1c gt 64 then hba1c_cat=3; /* gt 8% or 64 mmol per mol  */
+            end;
+        /* total number of unique non-diabetic drugs in the year before cohort entry  */
+        num_nondmdrugs1yr=sum(ace_1yrlookback,arb_1yrlookback,bb_1yrlookback,ccb_1yrlookback,nitrat_1yrlookback,coronar_1yrlookback,antiarr_1yrlookback,thrombo_1yrlookback,antivitk_1yrlookback,hepar_1yrlookback,stat_1yrlookback,fib_1yrlookback,lla_1yrlookback,thiaz_1yrlookback,loop_1yrlookback,kspar_1yrlookback,diurcom_1yrlookback,thiaantih_1yrlookback,diurall_1yrlookback,ass_1yrlookback, asscvd_1yrlookback, allnsa_1yrlookback,para_1yrlookback,allnsa_1yrlookback,opio_1yrlookback,acho_1yrlookback,sterinh_1yrlookback,bago_1yrlookback,abago_1yrlookback,lra_1yrlookback,xant_1yrlookback,ahist_1yrlookback,ahistc_1yrlookback,h2_1yrlookback,ppi_1yrlookback,thyro_1yrlookback,sterint_1yrlookback,stersys_1yrlookback,stertop_1yrlookback,adem_1yrlookback,apsy_1yrlookback,benzo_1yrlookback,hypno_1yrlookback,ssri_1yrlookback,li_1yrlookback,mao_1yrlookback,oadep_1yrlookback,mnri_1yrlookback,adep_1yrlookback,pheny_1yrlookback,barbi_1yrlookback,succi_1yrlookback,valpro_1yrlookback,carba_1yrlookback,oaconvu_1yrlookback,aconvu_1yrlookback,isupp_1yrlookback)  ;
+        label num_nondmdrugs1yr="Total number of unique non-diabetic drugs in the year before cohort entry ";
+        num_nondmdrugs1yr_cat=.; 
+            if num_nondmdrugs1yr<4 then num_nondmdrugs1yr_cat=num_nondmdrugs1yr;
+            else if num_nondmdrugs1yr ge 4 then num_nondmdrugs1yr_cat=4;
+        label num_nondmdrugs1yr_cat = "Total number of non-DM drugs in 1 yr before cohort entry";
+        format num_nondmdrugs1yr_cat drugs1yrcatf. ; 
+        /* *FIXME - duration of treated diabetes -- need to request additional variable from Pascal */
+        *  duration_metformin= metformin_first/365.25;
+        *  label duration_metformin="Proxy for duration of treated DM: Days between first date of metformin rx and (excl) cohort entry date";
+        /* formats and labels  */    
+        format sex $sexf. alcohol_cat $statusf. smoke $statusf. hba1c_cat  hba1cf. bmi_cat bmif.;
     run;
     /* If save=y then save to temp library for retreival later  */
     %if &save=Y %then %do; 

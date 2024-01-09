@@ -42,15 +42,7 @@ option SASAUTOS=(SASAUTOS "D:\Externe Projekte\UNC\wangje\sas\macros");
     PS weighting
     \*=================*/
     *%removeMetadata(tmp1);
-    %LET tablerowvarsi =   age  sex entry_year   bmi_cat2 alcohol_cat smoke_cat hba1c_Cat2  
-    nephr_ever nerop_ever dret_ever mi_ever stroke_ever PerArtD_ever /* duration_metformin */  dpp4i_ever SU_ever TZD_ever sglt2i_ever insulin_ever /* other oad  */   bigua_ever  prand_ever agluco_ever OAntGLP_ever    /* other */ ass_ever allnsa_ever hrtopp_ever estr_ever gesta_ever pill_ever /* Autoimmune */psorp_ever vasc_ever RhArth_Ever SjSy_Ever sLup_ever /* other drugs */num_nondmdrugs1yr num_nondmdrugs1yr_cat;
 
-    %LET interactions =     /* Interaction */ ;
-    %LET basevars =  age|age  sex entry_year   bmi_cat2 alcohol_cat smoke_cat hba1c_Cat2  nephr_ever nerop_ever dret_ever mi_ever stroke_ever PerArtD_ever bigua_ever  agluco_ever ass_ever allnsa_ever hrtopp_ever estr_ever gesta_ever pill_ever psorp_ever vasc_ever RhArth_Ever SjSy_Ever sLup_ever num_nondmdrugs1yr ;
-    %LET addedDPP4ivSU = oAntGLP_1yrlookback sglt2i_1yrlookback TZD_1yrlookback;
-    %let addedmodelvars= &addedDPP4ivSU;
-    %let basemodelvars= &basevars. &interactions. ;
-    %let tablerowvars= &tablerowvarsi;
 
     *  ods rtf file="&goutpath./&todaysdate.psoutput&exposure._&comparator..rtf";
     proc logistic data=tmp1 descending;
@@ -125,10 +117,23 @@ option SASAUTOS=(SASAUTOS "D:\Externe Projekte\UNC\wangje\sas\macros");
     symbol2 interpol=spline value=none line=2;
     axis1 order=(0 to 1 by 0.1) minor=none label=(a=0 j=c h=1.5 f=swiss 'Propensity Score') value=(h=1.1 f=swiss);
     axis2 minor=(n=1) label=(a=90 j=c h=1.5 f=swiss 'Density') value=(h=1.1 f=swiss);
+    title "Untrimmed PS distribution for &exposure. use, by treatment status";
     proc gplot data=psplot;
         plot density*value=pop / haxis=axis1 vaxis=axis2;
         run; quit;
-
+        title;
+        /* Printing untrimmed psplot */
+    goptions reset=all device=png targetdevice=png gsfname=grafout gsfmode=replace;
+    filename grafout "&foutpath./psplot_&exposure._&comparator.&todaysdate..png";
+    symbol1 interpol=spline value=none line=1;
+    symbol2 interpol=spline value=none line=2;
+    axis1 order=(0 to 1 by 0.1) minor=none label=(a=0 j=c h=1.5 f=swiss 'Propensity Score') value=(h=1.1 f=swiss);
+    axis2 minor=(n=1) label=(a=90 j=c h=1.5 f=swiss 'Density') value=(h=1.1 f=swiss);
+    title "Untrimmed PS distribution for &exposure. use, by treatment status";
+        proc gplot data=psplot;
+            plot density*value=pop / haxis=axis1 vaxis=axis2;
+            run; quit;
+            title;
     /*=================*\
     TRIMMING
     \*=================*/
@@ -227,17 +232,44 @@ option SASAUTOS=(SASAUTOS "D:\Externe Projekte\UNC\wangje\sas\macros");
     symbol2 interpol=spline value=none line=2;
     axis1 order=(0 to 1 by 0.1) minor=none label=(a=0 j=c h=1.5 f=swiss 'Propensity Score') value=(h=1.1 f=swiss);
     axis2 minor=(n=1) label=(a=90 j=c h=1.5 f=swiss 'Density') value=(h=1.1 f=swiss);
+    title "Trimmed PS distribution for &exposure. use, by treatment status";
     proc gplot data=psplot_trim;
         plot density*value=pop / haxis=axis1 vaxis=axis2;
         run; quit;
+        title;
+    goptions reset=all device=png targetdevice=png gsfname=grafout gsfmode=replace;
+    filename grafout "&foutpath./psplot_trim_&exposure._&comparator.&todaysdate..png";
+    symbol1 interpol=spline value=none line=1;
+    symbol2 interpol=spline value=none line=2;
+    axis1 order=(0 to 1 by 0.1) minor=none label=(a=0 j=c h=1.5 f=swiss 'Propensity Score') value=(h=1.1 f=swiss);
+    axis2 minor=(n=1) label=(a=90 j=c h=1.5 f=swiss 'Density') value=(h=1.1 f=swiss);
+    title "Trimmed PS distribution for &exposure. use, by treatment status";
+    proc gplot data=psplot_trim;
+        plot density*value=pop / haxis=axis1 vaxis=axis2;
+        run; quit;
+        title;
     * check univariate analysis on weight variables by treatment status, check for extreme weights;
-    proc univariate data=psdsn ; class &exposure.; var iptw siptw smrw smrwu ssmrwu; run; quit;
+    proc univariate data=psdsn ; class &exposure.; var iptw siptw smrw smrwu ssmrwu; run; 
 
     /*=================*\
     Save Point`
     \*=================*/
     %if &save. = Y %then %do;
         data a.PS_&exposure._&comparator.; set psdsn; run;
+        /* Updating exclusions for PS trimming */
+        PROC SQL; 
+            create table tmp_counts as select * from temp.exclusions_014_&exposure._&comparator.;
+            select count(*) into : num_obs from tmp_counts;
+            insert into tmp_counts
+                set exclusion_num=&num_obs+1, 
+                long_text="Number of observations after trimming at 0.05 treated and 0.995 untreated",
+                dpp4i=&&n_&exposure._trim,
+                dpp4i_diff=&&n_&exposure._trim-&&n_&exposure.,
+                &comparator.=&&n_&comparator._trim,
+                &comparator._diff=&&n_&comparator._trim-&&n_&comparator., 
+                full=&&n_&exposure._trim+&&n_&comparator._trim;
+            create table temp.exclusions_015_&exposure._&comparator. as select * from tmp_counts;
+        QUIT;
     %end;%else %do; %end;
 
     /*=================*\
@@ -251,13 +283,15 @@ option SASAUTOS=(SASAUTOS "D:\Externe Projekte\UNC\wangje\sas\macros");
     %let ds = psdsn ;
     %let colVar = &exposure.;
     %let rowVars = &tablerowvars. ;
-    %LET outname = 'Table 1 &exposure. vs. &comparator. ACNU (trimmed at 0.05, 99.5)'; 
+    %LET outname = Table1_&exposure._&comparator._&todaysdate.; 
     options orientation=landscape nodate nonumber nocenter;
     %table1(inds= &ds, colVar= &colVar, rowVars= &rowVars, wgtVar= , maxLevels=16, outfile=&outname, title=&outname, cellsize=5);
+    title ;
     data tab1_unwgt_&exposure.; 
         set final; run;
     proc datasets lib=work nolist nodetails; delete final; run; quit;
     %table1(inds= &ds, colVar= &colVar, rowVars= &rowVars, wgtVar= &wgtvar, maxLevels=16, outfile=&outname, title=&outname, cellsize=5);
+    title;
     data tab1_wgt_&exposure.; 
         set final; run;
     proc datasets lib=work nolist nodetails; delete final; run; quit;
@@ -271,9 +305,9 @@ option SASAUTOS=(SASAUTOS "D:\Externe Projekte\UNC\wangje\sas\macros");
             on a.row=b.row and a.order=b.order and a.roworder=b.roworder
         order by order, roworder;
     quit;
-    options orientation=landscape nodate nonumber nocenter;
     ods escapechar='~' ;
-    ods rtf file="&toutPath./Table1tri_&exposure._&comparator._&todaysdate..rtf";
+    options orientation=landscape nodate nonumber nocenter;
+    ods rtf file="&toutPath./Table1trim_&exposure._&comparator._&todaysdate..rtf";
     proc print data=table1_&exposure.v&comparator. noobs label; var row &exposure &comparator sdiff &comparator._wgt sdiff_wgt; run;
     ods rtf close;
 
@@ -296,6 +330,15 @@ PS weighting with Abrahami covariates:
 \*===================================*/
 /* region */
 
+*  %LET tablerowvarsi =   age  sex entry_year   bmi_cat2 alcohol_cat smoke_cat hba1c_Cat2  
+*  nephr_ever nerop_ever dret_ever mi_ever stroke_ever PerArtD_ever /* duration_metformin */  dpp4i_ever SU_ever TZD_ever sglt2i_ever insulin_ever /* other oad  */   bigua_ever  prand_ever agluco_ever OAntGLP_ever    /* other */ ass_ever allnsa_ever hrtopp_ever estr_ever gesta_ever pill_ever /* Autoimmune */psorp_ever vasc_ever RhArth_Ever SjSy_Ever sLup_ever /* other drugs */num_nondmdrugs1yr num_nondmdrugs1yr_cat;
+
+*  %LET interactions =     /* Interaction */ ;
+*  %LET basevars =  age|age  sex entry_year   bmi_cat2 alcohol_cat smoke_cat hba1c_Cat2  nephr_ever nerop_ever dret_ever mi_ever stroke_ever PerArtD_ever bigua_ever  agluco_ever ass_ever allnsa_ever hrtopp_ever estr_ever gesta_ever pill_ever psorp_ever vasc_ever RhArth_Ever SjSy_Ever sLup_ever num_nondmdrugs1yr ;
+*  %LET addedDPP4ivSU = oAntGLP_1yrlookback sglt2i_1yrlookback TZD_1yrlookback;
+*  %let addedmodelvars= &addedDPP4ivSU;
+*  %let basemodelvars= &basevars. &interactions. ;
+*  %let tablerowvars= &tablerowvarsi;
 
 %LET tablerowvarsi =   age  sex entry_year   bmi_cat2 alcohol_cat smoke_cat hba1c_Cat2  
 nephr_ever nerop_ever dret_ever mi_ever stroke_ever PerArtD_ever /* duration_metformin */ bigua_ever SU_ever TZD_ever insulin_ever /* other oad  */ dpp4i_ever sglt2i_ever prand_ever agluco_ever OAntGLP_ever    /* other */ ass_ever allnsa_ever hrtopp_ever estr_ever gesta_ever pill_ever /* Autoimmune */psorp_ever vasc_ever RhArth_Ever SjSy_Ever sLup_ever /* other drugs */num_nondmdrugs1yr num_nondmdrugs1yr_cat;
@@ -312,7 +355,7 @@ nephr_ever nerop_ever dret_ever mi_ever stroke_ever PerArtD_ever /* duration_met
 *  %LET comparator = su;
 *  %LET refyear = 2015;
 
-%LET addedDPP4ivSU = GLP1_1yrlookback sglt2i_1yrlookback TZD_1yrlookback;
+%LET addedDPP4ivSU = oAntGLP_1yrlookback sglt2i_1yrlookback TZD_1yrlookback;
 %psweighting ( exposure= dpp4i ,
 comparator= SU, 
 weight= smrw, 
@@ -322,18 +365,18 @@ tablerowvars= &tablerowvarsi,
 refyear = 2015, 
 save= Y);
 
-%LET addedDPP4ivTZD = GLP1_1yrlookback sglt2i_1yrlookback su_1yrlookback;
+%LET addedDPP4ivTZD = oAntGLP_1yrlookback sglt2i_1yrlookback su_1yrlookback chf_ever;
 %psweighting(exposure=dpp4i,
 comparator=TZD, 
 weight=smrw,
 addedmodelvars=,
 basemodelvars= &basevars. &interactions,
-tablerowvars=&tablerowvarsi,
+tablerowvars=&tablerowvarsi chf_ever,
 refyear=2015,
 save=Y
 );
 
-%LET addedDPP4ivSGLT2i = GLP1_1yrlookback su_1yrlookback TZD_1yrlookback;
+%LET addedDPP4ivSGLT2i = oAntGLP_1yrlookback su_1yrlookback TZD_1yrlookback;
 %psweighting(exposure=dpp4i,
 comparator=SGLT2i, 
 weight=smrw,
@@ -344,5 +387,55 @@ refyear=2015,
 save=Y
 );
 
-
 %CheckLog( ,ext=LOG,subdir=N,keyword=,exclude=,out=temp.Log_issues,pm=N,sound=N,relog=N,print=Y,to=,cc=,logdef=LOG,dirext=N,shadow=Y,abort=N,test=);
+
+*Printing outputs for each ACNU cohort;
+ods excel file="&toutpath./T1_compiled_&todaysdate..xlsx"
+    options (
+        Sheet_interval="NONE"
+        embedded_titles="NO"
+        embedded_footnotes="NO"
+    );
+    *dpp4i vs su;
+ods excel options(sheet_name="DPP4i_SU"  sheet_interval="NOW");
+    proc print data=table1_dpp4ivSU noobs label; var row dpp4i su sdiff su_wgt sdiff_wgt; run;
+    goptions reset=all;
+ods excel options(sheet_name="DPP4i_SU_plots" sheet_interval="NOW");
+    goptions iback="&foutpath./psplot_trim_dpp4i_SU&todaysdate..png" imagestyle=fit;
+proc gslide;RUN; quit  ; goptions reset=all;
+    goptions iback="&foutpath./psplot_dpp4i_SU&todaysdate..png" imagestyle=fit;
+    proc gslide;RUN;quit; goptions reset=all;
+ods excel options(sheet_name="DPP4i_SU_flowchart" sheet_interval="NOW");
+    proc print data=temp.exclusions_015_dpp4i_su noobs ; run;
+
+    *dpp4i vs TZD;
+ods excel options(sheet_name="DPP4i_TZD" sheet_interval="NOW");
+    proc print data=table1_dpp4ivTZD noobs label; var row dpp4i tzd sdiff tzd_wgt sdiff_wgt; run;
+ods excel options(sheet_name="DPP4i_TZD_plots" sheet_interval="NOW");
+    goptions iback="&foutpath./psplot_trim_dpp4i_TZD&todaysdate..png" imagestyle=fit;
+    proc gslide;RUN; quit; goptions reset=all;
+    goptions iback="&foutpath./psplot_dpp4i_TZD&todaysdate..png" imagestyle=fit;
+    proc gslide;RUN;quit; goptions reset=all;
+ods excel options(sheet_name="DPP4i_TZD_flowchart" sheet_interval="NOW");
+    proc print data=temp.exclusions_015_dpp4i_tzd noobs ; run;
+
+    *dpp4i vs SGLT2i;
+ods excel options(sheet_name="DPP4i_SGLT2i" sheet_interval="NOW");
+    proc print data=table1_dpp4ivSGLT2i noobs label; var row dpp4i sglt2i sdiff sglt2i_wgt sdiff_wgt; run;
+ods excel options(sheet_name="DPP4i_SGLT2i_plots" sheet_interval="NOW");
+    goptions iback="&foutpath./psplot_trim_dpp4i_SGLT2i&todaysdate..png" imagestyle=fit;
+    proc gslide;RUN; quit;    goptions reset=all;
+    goptions iback="&foutpath./psplot_dpp4i_SGLT2i&todaysdate..png" imagestyle=fit;
+    proc gslide;RUN;quit;    goptions reset=all;
+ods excel options(sheet_name="DPP4i_SGLT2i_flowchart" sheet_interval="NOW");
+    proc print data=temp.exclusions_015_dpp4i_sglt2i noobs ; run;
+
+    *log summary;
+ods excel options(sheet_name="Log_issues" sheet_interval="NOW");
+    proc print data=temp.Log_issues noobs ; run;
+ods excel close;
+
+ods _all_ close;
+/* '; * "; */; quit; run;
+
+

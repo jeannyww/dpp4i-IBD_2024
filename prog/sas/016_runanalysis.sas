@@ -113,39 +113,36 @@ data dsn; set a.ps_&exposure._&comparator;
 	format twoyear      date9.;
 	format threeyear    date9.;
 	format fouryear     date9.;
-/* Deleting persons with IBD during the latency period  */
-if &ibd_def._dt <(180+&intime.) then delete;
 
-/* As Treated */ 
-enddate_AT=min(&ibd_def._dt, discontDate,death_dt, endstudy_dt, dbexit_dt, LastColl_Dt, switchAugmentdate); /* AT exit date and AT exit_reason   */
-format enddate_AT date9.; LABEL enddate_AT="Date min of (&ibd_def._dt, switchAugmentdate, discontDate,death_dt, endstudy_dt, dbexit_dt, LastColl_Dt)";
+    /* Coding in more time variables  */
+    *rxchange: for switching one class from another class;
+        rxchange=min(DiscontDate, enddt, switchAugmentDate);
+        label rxchange='MIN of DisconDate, End of Continuous Enrollment, SwitchAugmentDate';
+        format rxchange date9.;
+    *end of drug in the drug class; 
+        endofdrug=rxchange+&latency;
 
-    caco_AT=&ibd_def;
-    if (&ibd_def eq 1 and &ibd_def._dt>enddate_AT) then do;
-    caco_AT=0; end; 
+        /* As Treated */ 
+    %if &type eq AT %then %do;  
+        enddate=min(endofdrug,switchAugmentdate , &ibd_def._dt,&outtime, discontDate,death_dt, endstudy_dt, dbexit_dt, enddt, LastColl_Dt ); /* AT exit date and AT exit_reason   */
+        format enddate date9.; LABEL enddate="Date min of (&ibd_def._dt, switchAugmentdate, drug discontinuation, death_dt, endstudy_dt, dbexit_dt, enddt (end enroll), LastColl_Dt)";
+        %end;
 
-    time_AT=(enddate_AT-(&intime.+180)+1)/365.25; 
-    label time_AT="fu time for as treated analysis";
-    timedu_AT=(enddate_AT-&intime.)/365.25;
-    label timedu_AT = "Duration of treatment for as treated analysis";
-    if time_AT>0 then logtime_AT= log(time_AT/100000); else time_AT = .; 
-
-/* Initial Treatment */
-    enddate_IT= min(&ibd_def._dt, discontDate,death_dt, endstudy_dt, dbexit_dt, LastColl_Dt);
-    label enddate_IT = "Date min of (&ibd_def._dt, discontDate,death_dt, endstudy_dt, dbexit_dt, LastColl_Dt)";
-
+        /* Initial Treatment */
+    %if &type eq IT %then %do;
+        enddate= min(&ibd_def._dt,&outtime, discontDate,death_dt, endstudy_dt, dbexit_dt, enddt, LastColl_Dt);
+        format enddate date9. ; label enddate = "Date min of (&ibd_def._dt, discontDate,death_dt, endstudy_dt, dbexit_dt, LastColl_Dt)";
+    %end;
+    *Removing individuals who did not reach the induction period for followup ;
+    if &type in ('AT', 'IT') then enddatedelete=min( &ibd_def, endEnrol,endofstudy, &outtime);  
+    IF enddatedelete<=(&intime + &induction) then delete; 
+    IF enddate>(&intime + &induction) and enddate=&ibd_def._dt and &ibd_def ne . then event=1; else event=0;
+    time=(enddate-(&intime.+&induction)+1)/365.25;
+    time_drugdur=(min(rxchange, enddate)-(&intime.+1))/365.25;
+    if time>0 then logtime=(log(time/100000))  ;
+    else time=.;
+    label time = "person-years" time_drugdur= "duration of treatment";
     
-    caco_IT=&ibd_def; 
-    if (&ibd_def eq 1 and &ibd_def._dt>enddate_IT) then do;
-    caco_IT=0; end;
-    label caco_IT = "case status for initial treatment analysis";
-
-    time_IT=(enddate_IT-(&intime.+180)+1)/365.25; 
-    label time_IT="fu time for Initial Treatment analysis";
-    timedu_IT=(enddate_IT-&intime.+1)/365.25;
-    label timedu_IT = "Duration of treatment for initial treatment analysis";
-
-    if time_IT>0 then logtime_IT=log(time_IT/100000); else time_IT=.; 
 RUN;
 
 /*===================================*\

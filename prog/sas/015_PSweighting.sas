@@ -31,8 +31,7 @@ option SASAUTOS=(SASAUTOS "D:\Externe Projekte\UNC\wangje\sas\macros");
 \*===================================*/
 /* region */
 
-
-    %macro psweighting ( exposure , comparator , weight , addedmodelvars ,basemodelvars , tablerowvars, refyear  , dat, save );
+%macro psweighting ( exposure , comparator , weight , addedmodelvars ,basemodelvars , tablerowvars, refyear  , dat, save );
 
     data tmp1;
         set a.allmerged_&exposure._&comparator.;
@@ -369,7 +368,7 @@ save= Y);
 %psweighting(exposure=dpp4i,
 comparator=TZD, 
 weight=smrw,
-addedmodelvars=,
+addedmodelvars= &addedDPP4ivTZD,
 basemodelvars= &basevars. &interactions,
 tablerowvars=&tablerowvarsi chf_ever,
 refyear=2015,
@@ -380,7 +379,7 @@ save=Y
 %psweighting(exposure=dpp4i,
 comparator=SGLT2i, 
 weight=smrw,
-addedmodelvars=,
+addedmodelvars=&addedDPP4ivSGLT2i,
 basemodelvars= &basevars. &interactions,
 tablerowvars=&tablerowvarsi,
 refyear=2015,
@@ -389,6 +388,8 @@ save=Y
 
 %CheckLog( ,ext=LOG,subdir=N,keyword=,exclude=,out=temp.Log_issues,pm=N,sound=N,relog=N,print=Y,to=,cc=,logdef=LOG,dirext=N,shadow=Y,abort=N,test=);
 
+ods _all_ close;
+goptions reset=all;quit;
 *Printing outputs for each ACNU cohort;
 ods excel file="&toutpath./T1_compiled_&todaysdate..xlsx"
     options (
@@ -399,12 +400,12 @@ ods excel file="&toutpath./T1_compiled_&todaysdate..xlsx"
     *dpp4i vs su;
 ods excel options(sheet_name="DPP4i_SU"  sheet_interval="NOW");
     proc print data=table1_dpp4ivSU noobs label; var row dpp4i su sdiff su_wgt sdiff_wgt; run;
-    goptions reset=all;
 ods excel options(sheet_name="DPP4i_SU_plots" sheet_interval="NOW");
-    goptions iback="&foutpath./psplot_trim_dpp4i_SU&todaysdate..png" imagestyle=fit;
-proc gslide;RUN; quit  ; goptions reset=all;
     goptions iback="&foutpath./psplot_dpp4i_SU&todaysdate..png" imagestyle=fit;
     proc gslide;RUN;quit; goptions reset=all;
+    goptions iback="&foutpath./psplot_trim_dpp4i_SU&todaysdate..png" imagestyle=fit;
+    proc gslide;RUN; quit  ; goptions reset=all;
+    ods text="PS model:  &addedDPP4ivSU.  &basevars. &interactions. ";
 ods excel options(sheet_name="DPP4i_SU_flowchart" sheet_interval="NOW");
     proc print data=temp.exclusions_015_dpp4i_su noobs ; run;
 
@@ -412,10 +413,11 @@ ods excel options(sheet_name="DPP4i_SU_flowchart" sheet_interval="NOW");
 ods excel options(sheet_name="DPP4i_TZD" sheet_interval="NOW");
     proc print data=table1_dpp4ivTZD noobs label; var row dpp4i tzd sdiff tzd_wgt sdiff_wgt; run;
 ods excel options(sheet_name="DPP4i_TZD_plots" sheet_interval="NOW");
-    goptions iback="&foutpath./psplot_trim_dpp4i_TZD&todaysdate..png" imagestyle=fit;
-    proc gslide;RUN; quit; goptions reset=all;
     goptions iback="&foutpath./psplot_dpp4i_TZD&todaysdate..png" imagestyle=fit;
     proc gslide;RUN;quit; goptions reset=all;
+    goptions iback="&foutpath./psplot_trim_dpp4i_TZD&todaysdate..png" imagestyle=fit;
+    proc gslide;RUN; quit; goptions reset=all;
+    ods text="PS model:  &addedDPP4ivTZD.  &basevars. &interactions. ";
 ods excel options(sheet_name="DPP4i_TZD_flowchart" sheet_interval="NOW");
     proc print data=temp.exclusions_015_dpp4i_tzd noobs ; run;
 
@@ -423,10 +425,11 @@ ods excel options(sheet_name="DPP4i_TZD_flowchart" sheet_interval="NOW");
 ods excel options(sheet_name="DPP4i_SGLT2i" sheet_interval="NOW");
     proc print data=table1_dpp4ivSGLT2i noobs label; var row dpp4i sglt2i sdiff sglt2i_wgt sdiff_wgt; run;
 ods excel options(sheet_name="DPP4i_SGLT2i_plots" sheet_interval="NOW");
-    goptions iback="&foutpath./psplot_trim_dpp4i_SGLT2i&todaysdate..png" imagestyle=fit;
-    proc gslide;RUN; quit;    goptions reset=all;
     goptions iback="&foutpath./psplot_dpp4i_SGLT2i&todaysdate..png" imagestyle=fit;
     proc gslide;RUN;quit;    goptions reset=all;
+    goptions iback="&foutpath./psplot_trim_dpp4i_SGLT2i&todaysdate..png" imagestyle=fit;
+    proc gslide;RUN; quit;    goptions reset=all;
+    ods text="PS model:  &addedDPP4ivSGLT2i.  &basevars. &interactions. ";
 ods excel options(sheet_name="DPP4i_SGLT2i_flowchart" sheet_interval="NOW");
     proc print data=temp.exclusions_015_dpp4i_sglt2i noobs ; run;
 

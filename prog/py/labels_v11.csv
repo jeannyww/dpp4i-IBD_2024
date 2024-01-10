@@ -1,0 +1,144 @@
+codelistname,codetype,filenames
+Alc_P,Read,Alcohol related disorders.txt 
+colo,Read,colonoscopy.txt
+IBD_P,Read,Inflammatory bowel disease_P.txt
+DivCol_I,Read,Diverticulitis and colitis_I.txt
+DivCol_P,Read,Diverticulitis and colitis_P.txt
+PCOS,Read,PCOS.txt
+DiabGest,Read,Gestational Diabetes.txt
+IBD_I,Read,Inflammatory bowel disease_I.txt
+asthma,Read,Asthma_P.txt
+copd,Read,COPD_P.txt
+arrhyth,Read,Arrhythmia_P.txt
+chf,Read,Heart failure_P.txt
+ihd,Read,IHD without MI_P.txt
+mi,Read,Myocardial infarction_P.txt
+hyperten,Read,Hypertension_P.txt
+stroke,Read,Strokes_all_with TIA_P.txt
+hyperlip,Read,Hyperlipidemia_P.txt
+diab,Read,Diabetes_P.txt
+dvt,Read,DVT_P.txt
+pe,Read,Pulmonary embolism_P.txt
+gout,Read,GOUT and hyperuricemia_P.txt
+pthyro,Read,Hyperthyroidism_P.txt
+mthyro,Read,Hypothyroidism_P.txt
+depres,Read,Depression_only_P.txt
+affect,Read,Affective disorders_WthDepression_P.txt
+suic,Read,Suicide and suicidal ideation_P.txt
+sleep,Read,Sleep disorders_P.txt
+schizo,Read,Schizophrenic schizotypal and delusional disorders_P.txt
+epilep,Read,Epilepsy_P.txt
+renal,Read,Renal diseases_P.txt
+GIulcer,Read,Ulcer_P.txt
+RhArth,Read,Rheumatoid Arthritis_P.txt
+alrhi,Read,Allergic rhinoconjunctivitis_hay fever_P.txt
+glauco,Read,Glaucoma_P.txt
+migra,Read,Migraine_P.txt
+sepsis,Read,Sepsis_P.txt
+pneumo,Read,Pneumonia_P.txt
+nephr,Read,Nephropathy.txt
+nerop,Read,Neuropathy.txt
+dret,Read,Diabetic_retinopathy_P.txt
+psorI,Read,Psoriasis_I.txt
+psorP,Read,psoriasis_P.txt
+vasc,Read,vasculitis_P.txt
+SjSy,Read,Sjogren Syndrom_P.txt
+sLup,Read,Systemic Lupus erythematodes_P.txt
+PerArtD,Read,Peripheral arterial disease.txt
+AbdPain,Read,Abdominal pain.txt
+Diarr,Read,Diarrhoea.txt
+BkStool,Read,Bloody stools.txt
+Crohns,Read,Crohns disease.txt
+Ucolitis,Read,Ulcerative colitis.txt
+Icomitis,Read,ischaemic colitis_P.txt
+Gastent,Read,Gastroenterology.txt
+ColIle,Read,Colectomy and ileostomy.txt
+Sigmo,Read,Sigmoidoscopy.txt
+Biops,Read,Biopsy.txt
+Ileo,Read,Ileostomy.txt
+HBA1c,Read,HBA1c_level.txt
+DPP4i,BCode,oral antidiabetics_Gliptins (DPP4)_ALL_SCh.txt
+SU,BCode,oral antidiabetics_Sulfonylureas_Standard.txt
+SGLT2i,BCode,oral antidiabetics_SGLT2 inhib_ALL_SCh.txt
+TZD,BCode,oral antidiabetics_Thiazolidinediones (PPAR)_SCh.txt
+Insulin,BCode,Insulin.txt
+bigua,BGCode,oral antidiabetics_Biguanides.txt
+prand,BGCode,oral antidiabetics_Glinides.txt
+agluco,BGCode,oral antidiabetics_agluco.txt
+OAntGLP,BGCode,oral antidiabetics_GLP-1 (Incretin mimetics)_SCh.txt
+AminoS,BCode,Aminosalicylates.txt
+Mesal,BCode,Mesalazine.txt
+Sulfas,BCode,Sulfasalazine.txt
+Olsala,BCode,Olsalazine.txt
+Balsal,BCode,Balsalazine.txt
+ace,BCode,ace-inhibitors.txt
+arb,BGCode,Angiotensin II antagonists.txt
+bb,BCode,Betablockers w thiazides.txt
+ccb,BCode,calcium channel blocker.txt
+nitrat,BGCode,Nitrates.txt
+coronar,BCode,Coronary vasodilatators.txt
+antiarr,BGCode,Antiarrhythmics.txt
+thrombo,BGCode,Antiplatelets.txt
+antivitk,BCode,Vitamin K antagonists.txt
+hepar,BCode,Heparins.txt
+stat,BCode,Statins.txt
+fib,BGCode,Fibrates.txt
+lla,BCode,Lipid lowering agents other.txt
+thiaz,BCode,Thiazide diuretics.txt
+loop,BCode,Loop diuretics.txt
+kspar,BCode,Kalium sparing diuretics.txt
+diurcom,BCode,Diuretics combinations_unclass.txt
+thiaantih,BCode,Thiazides with antihypertensives.txt
+diurall,BCode,DiureticsALL.txt
+ass,BGCode,Acetylsalicylic acid noncardiovascular.txt
+asscvd,BGCode,Acetylsalicylic acid cardiovascular.txt
+allnsa,BGCode,NSAIDs_All.txt
+para,BCode,Paracetamol.txt  
+bago,BCode,Beta-Agonists.txt
+abago,BCode,alpha and beta agonists.txt
+opio,BGCode,Opioids_ALL.txt
+acho,BGCode,Anticholinergics copd.txt
+sterinh,BGCode,corticosteroids-inhal.txt
+lra,BCode,leukotriene receptor antagonists.txt
+xant,BCode,xanthines.txt
+ahist,BCode,Histamine antagonists_without combis.txt
+ahistc,BCode,Histamine antagonists_combinations.txt
+h2,BCode,Histamin-H2-Receptor antagonists.txt
+ppi,BCode,Proton pump inhibitors.txt
+IBD,BCode,Inflammation inhibitors intestinal.txt
+thyro,BCode,Thyroid gland therapy.txt
+sterint,BGCode,Corticosteroids-intestinal.txt
+stersys,BCode,Corticosteroids-systemic.txt
+stertop,BGCode,Corticosteroids-topical.txt
+gesta,BGCode,Gestagens.txt
+pill,BGCode,hormonal contraception.txt
+HRTopp,BCode,HRT estrogen opposed.txt
+estr,BCode,estrogen therapy.txt 
+adem,BCode,Antidementiva.txt
+apsy,BCode,Antipsychotic drugs.txt
+benzo,BCode,Benzodiazepines.txt
+hypno,BCode,Hypnotics.txt
+ssri,BCode,Selective Serotonin Reuptake Inhibitors.txt
+li,BCode,lithium.txt
+mao,BCode,Monoaminoxidase A inhibitors.txt
+oadep,BGCode,Antidepressiva other.txt
+mnri,BCode,Monoamin Reuptake inhibitors.txt
+adep,BCode,Antidepressants_ALL.txt
+pheny,BCode,Anticonvulsants phenytoin.txt
+barbi,BCode,Anticonvulsants barbiturates.txt
+succi,BCode,Anticonvulsants succinimid.txt
+valpro,BCode,Anticonvulsants valproate.txt
+carba,BCode,Anticonvulsants carbamazepine.txt
+oaconvu,BCode,Anticonvulsants others.txt
+aconvu,BCode,Anticonvulsants_ALL.txt
+isupp,BCode,Immunosuppressives total.txt
+TnfAI,BCode,TNF alpha inhibitors_IBD.txt
+Budeo,GCode,Budesonide_enteral.txt
+OtherImm,BCode,Other immunosuppressives_IBD.txt
+CycloSpor,BCode,Cyclosporine intravenous.txt
+Iso_oral,BCode,Isotretinoin_oral.txt
+Iso_top,BCode,Isotretinoin_topical.txt
+Myco,BCode,Mycophenolate.txt
+Etan,BCode,Etanercept.txt
+Ipili,BCode,Ipilimumab.txt
+Ritux,BCode,Rituximab.txt

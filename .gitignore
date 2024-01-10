@@ -39,6 +39,7 @@ mtest/
 out/
 ref/
 test/
+macros/
 prog/sas/macros/
 prog/sas/test/
 prog/archive/

@@ -39,6 +39,8 @@ mtest/
 out/
 ref/
 test/
+prog/sas/macros/
+prog/sas/test/
 prog/archive/
 .vscode/
 .sasjslint

@@ -25,11 +25,6 @@ options macrogen symbolgen mlogic mprint mcompile mcompilenote=all; option MAUTO
 option SASAUTOS=(SASAUTOS "D:\Externe Projekte\UNC\wangje\prog\sas\macros");
 %setup(programName=016_runanalysis, savelog=N, dataset=tmp);
 
-
-
-
-
-
 proc template; define style mystyle;
     parent=styles.sasweb;
         class graphwalls /frameborder=off;
@@ -69,7 +64,9 @@ outtime =  ,      *time which analysis fu ends, ie for AT: '31Dec2017'd, for ITT
 \*===================================*/
 /* region */
 
-%analysis ( exposure= dpp4i , comparator= su, ana_name=mainIT, type= IT, weight= smrw, induction= 180, latency= 180 , ibd_def= ibd1, intime= entry, outtime='31Dec2022'd , outdata=IT );
+%analysis ( exposure= dpp4i , comparator= su, ana_name=mainIT, type= IT, weight= smrw, induction= 180, latency= 180 , ibd_def= ibd1, intime= entry, outtime='31Dec2022'd , outdata=IT ) ;
+
+
     data tmp; set out_: ;
     run;
     proc print data=tmp;
@@ -87,11 +84,17 @@ outtime =  ,      *time which analysis fu ends, ie for AT: '31Dec2017'd, for ITT
     %let intime= filldate2 ;
     %let outtime= '31DEC2022'd ;
     %let outdata= IT;
+%analysis(exposure=&exposure, comparator=&comparator, ana_name=&ana_name, type=&type, weight=&weight, induction=&induction, latency=&latency, ibd_def=&ibd_def, intime=&intime, outtime=&outtime, outdata=&outdata);
 
 /* endregion //!SECTION */
 
+/*===================================*\
+//SECTION - First- Creating Macro
+\*===================================*/
+
+
 %macro analysis ( exposure , comparator , ana_name , type , weight , induction , latency , ibd_def , 
-intime , outtime , outdata );
+intime , outtime , outdata ) / minoperator mindelimiter=',';
 
 /*===================================*\
 //SECTION - Setting up data for analysis 
@@ -133,18 +136,20 @@ data dsn; set a.ps_&exposure._&comparator;
         endofdrug=rxchange+&latency;
 
         /* As Treated */ 
-    %if &type eq AT %then %do;  
+    %if %upcase(&type) eq AT %then %do;  
         enddate=min(endofdrug,switchAugmentdate , &ibd_def._dt,&outtime, discontDate,death_dt, endstudy_dt, dbexit_dt, enddt, LastColl_Dt ); /* AT exit date and AT exit_reason   */
         format enddate date9.; LABEL enddate="Date min of (&ibd_def._dt, switchAugmentdate, drug discontinuation, death_dt, endstudy_dt, dbexit_dt, enddt (end enroll), LastColl_Dt)";
-        %end;
-
+        %end; 
         /* Initial Treatment */
-    %if &type eq IT %then %do;
+    %else %if %upcase(&type) eq IT %then %do;
         enddate= min(&ibd_def._dt,&outtime, discontDate,death_dt, endstudy_dt, dbexit_dt, enddt, LastColl_Dt);
         format enddate date9. ; label enddate = "Date min of (&ibd_def._dt, discontDate,death_dt, endstudy_dt, dbexit_dt, LastColl_Dt)";
-    %end;
+        %end;
     *Removing individuals who did not reach the induction period for followup ;
-    if &type in ('AT', 'IT') then enddatedelete=min( &ibd_def, endEnrol,endofstudy, &outtime);  
+    %if %upcase(&type) # AT, IT %then %do;
+        enddatedelete=min( &ibd_def, endEnrol,endofstudy, &outtime);  
+    %end;
+
     IF enddatedelete<=(&intime + &induction) then delete; 
     IF enddate>(&intime + &induction) and enddate=&ibd_def._dt and &ibd_def ne .    then event=1; else event=0;
 
@@ -156,6 +161,7 @@ data dsn; set a.ps_&exposure._&comparator;
     label time = "person-years" time_drugdur= "duration of treatment";
     
 RUN;
+/* endregion //!SECTION */
 
 /*===================================*\
 //SECTION - Getting median futime, dutime, and counts
@@ -391,6 +397,7 @@ run;
 
 /* endregion //!SECTION */
 %mend analysis;
+
 /* endregion //!SECTION */
 
 

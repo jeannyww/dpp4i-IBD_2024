@@ -24,6 +24,19 @@ Notes: initial commit. see change log at https://github.com/scscriptionsh/dpp4i-
 *****************************************************************************************************************/
 
 proc format;
+
+/* event type */
+value feventtype
+1="1: IBD definition 1"
+2="2: IBD definition 2"
+3="3: IBD definition 3"
+4="4: IBD definition 4"
+5="5: IBD definition 5"
+6="6: Bad Rx"
+7="7: Death"
+8="8: Database exit"
+9="9: Last collection data"
+;
 /* sex*/
 value $sexf
 'm'="Male"

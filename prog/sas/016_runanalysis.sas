@@ -59,49 +59,10 @@ outtime =  ,      *time which analysis fu ends, ie for AT: '31Dec2017'd, for ITT
 , outtime=  
 , outdata= );
 ---------------------------------------------------------------------*/
-/*===================================*\
-//SECTION - Running macro 
-\*===================================*/
-/* region */
-
-%analysis ( exposure= dpp4i , comparator= su, ana_name=mainIT, type= IT, weight= smrw, induction= 180, latency= 180 , ibd_def= ibd1, intime= entry, outtime='31Dec2022'd , outdata=IT , save=N ) ;
-%analysis ( exposure= dpp4i , comparator= tzd, ana_name=mainIT, type= IT, weight= smrw, induction= 180, latency= 180 , ibd_def= ibd1, intime= entry, outtime='31Dec2022'd , outdata=IT , save=N ) ;
-%analysis ( exposure= dpp4i , comparator= sglt2i, ana_name=mainIT, type= IT, weight= smrw, induction= 180, latency= 180 , ibd_def= ibd1, intime= entry, outtime='31Dec2022'd , outdata=IT , save=N ) ;
-
-%analysis ( exposure= dpp4i , comparator= su, ana_name=mainIT, type= AT, weight= smrw, induction= 180, latency= 180 , ibd_def= ibd1, intime= entry, outtime='31Dec2022'd , outdata=IT , save=N ) ;
-%analysis ( exposure= dpp4i , comparator= tzd, ana_name=mainIT, type= AT, weight= smrw, induction= 180, latency= 180 , ibd_def= ibd1, intime= entry, outtime='31Dec2022'd , outdata=IT , save=N ) ;
-%analysis ( exposure= dpp4i , comparator= sglt2i, ana_name=mainIT, type= AT, weight= smrw, induction= 180, latency= 180 , ibd_def= ibd1, intime= entry, outtime='31Dec2022'd , outdata=IT , save=N ) ;
-
-%LET outcomelist = ibd1 ibd2 ibd3 ibd4 ibd5 ;
-/* *TODO - add logic loop for ibd2-ibd5, and badrx later */
-
-
-    data tmp; set out_: ;
-    run;
-    proc print data=tmp;
-    run;
-
-*tmp assignment for macro testing;
-    %LET exposure = dpp4i;
-    %let comparator=tzd;
-    %LET ana_name = mainIT;
-    %let type= IT;
-    %let weight=smrw;
-    %let induction=180;
-    %let latency=180;
-    %let ibd_def=ibd1;
-    %let intime= filldate2 ;
-    %let outtime= '31DEC2022'd ;
-    %let outdata= IT;
-    %LET save = N;
-%analysis(exposure=&exposure, comparator=&comparator, ana_name=&ana_name, type=&type, weight=&weight, induction=&induction, latency=&latency, ibd_def=&ibd_def, intime=&intime, outtime=&outtime, outdata=&outdata, save=&save);
-
-/* endregion //!SECTION */
 
 /*===================================*\
 //SECTION - First- Creating Macro
 \*===================================*/
-
 
 %macro analysis ( exposure , comparator , ana_name , type , weight , induction , latency , ibd_def , intime , outtime , outdata, save ) / minoperator mindelimiter=',';
 
@@ -213,14 +174,14 @@ data dsn; set dsn; if time eq . then delete; run;
 \*===================================*/
 /* median time of followup */
 ods output summary=mediantime;
-proc means data = dsn STACKODS N NMISS SUM MEAN STD MIN MAX Q1 MEDIAN Q3;
+proc means data = dsn STACKODS  N NMISS SUM MEAN STD MIN MAX Q1 MEDIAN Q3;
     where time ne .; 
     class &exposure;
     var time ;
 run;
 
 ods output summary=mediantimedu;
-proc means data = dsn STACKODS N NMISS SUM MEAN STD MIN MAX Q1 MEDIAN Q3;
+proc means data = dsn STACKODS  N NMISS SUM MEAN STD MIN MAX Q1 MEDIAN Q3;
     where time ne .; 
     class &exposure;
     var  time_drugdur;
@@ -245,7 +206,7 @@ run;
 
 /* count numbers of event  */
 ods output summary=event;
-Proc means data=dsn sum stackods;
+Proc means data=dsn sum stackods ;
     where time ne .; 
     class &exposure;
     var event;
@@ -337,7 +298,7 @@ Proc sort data=&outdata;
 run;
 Data tmpout1
     (keep=&exposure 
-    Nobs Nmiss
+    Nobs type nmiss
     mediantime mediantimedu time_sum event_sum rate crudehr &weight.HR analysis induction latency exp unexp);
     set &outdata;
     exp="&exposure.";
@@ -347,7 +308,7 @@ Data tmpout1
 run;
 
 Data out_&exposure.v&comparator._&ana_name._&outdata.;
-    retain &exposure Nobs  time_sum event_sum rate crudehr &weight.HR analysis induction latency exp unexp; 
+    retain &exposure Nobs TYPE time_sum event_sum rate crudehr &weight.HR analysis induction latency exp unexp; 
     set tmpout1;
         
     format event_sum best12.;
@@ -409,26 +370,26 @@ RUN;
 
 /*No. of risk at 0 year*/
 %let dataset=dsn;
-proc sql; create table tmpp_b as select "&exposure."    as drug ,0 as fu_year,  count(id) as total_id, "No. at risk for &comparator initiator at 0 year" as label from &dataset where &exposure=0; quit;
-proc sql; create table tmpp_a as select "&comparator." as drug,0 as fu_year, count(id) as total_id, "No. at risk for &exposure initiator at 0 year" as label from &dataset where &exposure=1; quit;
+proc sql; create table tmpp_b as select "&exposure."    as drug length=12 ,0 as fu_year,  count(id) as total_id, "No. at risk for &comparator initiator at 0 year" as label length=60 from &dataset where &exposure=0; quit;
+proc sql; create table tmpp_a as select "&comparator." as drug length=12,0 as fu_year, count(id) as total_id, "No. at risk for &exposure initiator at 0 year" as label length=60 from &dataset where &exposure=1; quit;
 /*No. of risk at 0.5 year*/
-proc sql; create table tmpp_c as select "&exposure." as drug,0.5 as fu_year,  count(id) as total_id, "No. at risk for &exposure initiator at 0.5 year" as label from &dataset where &timevar >=0.5 and &exposure=1; quit;
-proc sql; create table tmpp_d as select "&comparator." as drug,0.5 as fu_year, count(id) as total_id, "No. at risk for &comparator initiator at 0.5 year" as label from &dataset where &timevar >=0.5 and &exposure=0; quit;
+proc sql; create table tmpp_c as select "&exposure." as drug length=12,0.5 as fu_year,  count(id) as total_id, "No. at risk for &exposure initiator at 0.5 year" as label length=60 from &dataset where &timevar >=0.5 and &exposure=1; quit;
+proc sql; create table tmpp_d as select "&comparator." as drug length=12,0.5 as fu_year, count(id) as total_id, "No. at risk for &comparator initiator at 0.5 year" as label length=60 from &dataset where &timevar >=0.5 and &exposure=0; quit;
 /*No. of risk at 1 year*/
-proc sql; create table tmpp_e as select "&exposure." as drug,1.0 as fu_year,  count(id) as total_id, "No. at risk for &exposure initiator at 1 year" as label from &dataset where &timevar >=1 and &exposure=1; quit;
-proc sql; create table tmpp_f as select "&comparator." as drug,1.0 as fu_year, count(id) as total_id, "No. at risk for &comparator initiator at 1 year" as label from &dataset where &timevar >=1 and &exposure=0; quit;
+proc sql; create table tmpp_e as select "&exposure." as drug length=12,1.0 as fu_year,  count(id) as total_id, "No. at risk for &exposure initiator at 1 year" as label length=60 from &dataset where &timevar >=1 and &exposure=1; quit;
+proc sql; create table tmpp_f as select "&comparator." as drug length=12,1.0 as fu_year, count(id) as total_id, "No. at risk for &comparator initiator at 1 year" as label length=60 from &dataset where &timevar >=1 and &exposure=0; quit;
 /*No. of risk at 1.5 year*/
-proc sql; create table tmpp_g as select "&exposure." as drug,1.5 as fu_year,  count(id) as total_id, "No. at risk for &exposure initiator at 1.5 year" as label from &dataset where &timevar >=1.5 and &exposure=1; quit;
-proc sql; create table tmpp_h as select "&comparator." as drug,1.5 as fu_year, count(id) as total_id, "No. at risk for &comparator initiator at 1.5 year" as label from &dataset where &timevar >=1.5 and &exposure=0; quit;
+proc sql; create table tmpp_g as select "&exposure." as drug length=12,1.5 as fu_year,  count(id) as total_id, "No. at risk for &exposure initiator at 1.5 year" as label length=60 from &dataset where &timevar >=1.5 and &exposure=1; quit;
+proc sql; create table tmpp_h as select "&comparator." as drug length=12,1.5 as fu_year, count(id) as total_id, "No. at risk for &comparator initiator at 1.5 year" as label length=60 from &dataset where &timevar >=1.5 and &exposure=0; quit;
 /*No. of risk at 2 year*/
-proc sql; create table tmpp_i as select "&exposure." as drug,2 as fu_year,  count(id) as total_id, "No. at risk for &exposure initiator at 2 year" as label from &dataset where &timevar >=2 and &exposure=1; quit;
-proc sql; create table tmpp_j as select "&comparator." as drug,2 as fu_year, count(id) as total_id, "No. at risk for &comparator initiator at 2 year" as label from &dataset where &timevar >=2 and &exposure=0; quit;
+proc sql; create table tmpp_i as select "&exposure." as drug length=12,2 as fu_year,  count(id) as total_id, "No. at risk for &exposure initiator at 2 year" as label length=60 from &dataset where &timevar >=2 and &exposure=1; quit;
+proc sql; create table tmpp_j as select "&comparator." as drug length=12,2 as fu_year, count(id) as total_id, "No. at risk for &comparator initiator at 2 year" as label length=60 from &dataset where &timevar >=2 and &exposure=0; quit;
 /*No. of risk at 2.5 year*/
-proc sql; create table tmpp_k as select "&exposure." as drug,2.5 as fu_year,  count(id) as total_id, "No. at risk for &exposure initiator at 2.5 year" as label from &dataset where &timevar >=2.5 and &exposure=1; quit;
-proc sql; create table tmpp_l as select "&comparator." as drug,2.5 as fu_year, count(id) as total_id, "No. at risk for &comparator initiator at 2.5 year" as label from &dataset where &timevar >=2.5 and &exposure=0; quit;
+proc sql; create table tmpp_k as select "&exposure." as drug length=12,2.5 as fu_year,  count(id) as total_id, "No. at risk for &exposure initiator at 2.5 year" as label length=60 from &dataset where &timevar >=2.5 and &exposure=1; quit;
+proc sql; create table tmpp_l as select "&comparator." as drug length=12,2.5 as fu_year, count(id) as total_id, "No. at risk for &comparator initiator at 2.5 year" as label length=60 from &dataset where &timevar >=2.5 and &exposure=0; quit;
 /*No. of risk at 3 year*/
-proc sql; create table tmpp_m as select "&exposure." as drug,3 as fu_year,  count(id) as total_id, "No. at risk for &exposure initiator at 3 year" as label from &dataset where &timevar >=3 and &exposure=1; quit;
-proc sql; create table tmpp_n as select "&comparator." as drug,3 as fu_year, count(id) as total_id, "No. at risk for &comparator initiator at 3 year" as label from &dataset where &timevar >=3 and &exposure=0; quit;
+proc sql; create table tmpp_m as select "&exposure." as drug length=12,3 as fu_year,  count(id) as total_id, "No. at risk for &exposure initiator at 3 year" as label length=60 from &dataset where &timevar >=3 and &exposure=1; quit;
+proc sql; create table tmpp_n as select "&comparator." as drug length=12,3 as fu_year, count(id) as total_id, "No. at risk for &comparator initiator at 3 year" as label length=60 from &dataset where &timevar >=3 and &exposure=0; quit;
 
 DATA countout;
 SET tmpp_:;
@@ -446,5 +407,70 @@ run;
 
 /* endregion //!SECTION */
 
+/*===================================*\
+//SECTION - Running macro 
+\*===================================*/
+/* region */
 
+    %analysis ( exposure= dpp4i , comparator= su, ana_name=main, type= IT, weight= smrw, induction= 180, latency= 180 , ibd_def= ibd1, intime= filldate2, outtime='31Dec2022'd , outdata=IT , save=N ) ;
+    %analysis ( exposure= dpp4i , comparator= tzd, ana_name=main, type= IT, weight= smrw, induction= 180, latency= 180 , ibd_def= ibd1, intime= filldate2, outtime='31Dec2022'd , outdata=IT , save=N ) ;
+    %analysis ( exposure= dpp4i , comparator= sglt2i, ana_name=main, type= IT, weight= smrw, induction= 180, latency= 180 , ibd_def= ibd1, intime= filldate2, outtime='31Dec2022'd , outdata=IT , save=N ) ;
+    
+        %macro table2(name, analysis);
+        Data table2_&analysis;
+            set ana.out_dppvsu_&name ana.out_dppvtzd_&name;
+                label time_Sum = "Person-year"
+                    event_Sum = "No. of Event";
+                format Nobs COMMA12. event_sum COMMA12. time_sum COMMA12. ;
+            run;
+            data table2_&analysis;
+                set table2_&analysis;
+            
+            options orientation=landscape;
+            ODS rtf FILE="&outpath./table2_&name._&analysis._%sysfunc(date(),date.).rtf";
+            PROC PRINT DATA=table2_&analysis;
+            title "&name &analysis";
+            RUN;
+            ODS rtf CLOSE;
+            %mend;
+        %table2(primary, primary)
+
+        ods excel file="&toutpath./Test.xlsx"
+          options (
+            Sheet_interval="PROC"
+            embedded_titles="NO"
+            embedded_footnotes="NO"
+        );
+        ods excel close;
+    
+    %analysis ( exposure= dpp4i , comparator= su, ana_name=main, type= AT, weight= smrw, induction= 180, latency= 180 , ibd_def= ibd1, intime= filldate2, outtime='31Dec2022'd , outdata=AT , save=N ) ;
+    %analysis ( exposure= dpp4i , comparator= tzd, ana_name=main, type= AT, weight= smrw, induction= 180, latency= 180 , ibd_def= ibd1, intime= filldate2, outtime='31Dec2022'd , outdata=AT , save=N ) ;
+    %analysis ( exposure= dpp4i , comparator= sglt2i, ana_name=main, type= AT, weight= smrw, induction= 180, latency= 180 , ibd_def= ibd1, intime= filldate2, outtime='31Dec2022'd , outdata=AT , save=N ) ;
+    
+    %LET outcomelist = ibd1 ibd2 ibd3 ibd4 ibd5 ;
+    /* *TODO - add logic loop for ibd2-ibd5, and badrx later */
+    
+    
+        data tmp; set out_: ;
+        run;
+        proc print data=tmp;
+        run;
+    
+    *tmp assignment for macro testing;
+        %LET exposure = dpp4i;
+        %let comparator=tzd;
+        %LET ana_name = mainIT;
+        %let type= IT;
+        %let weight=smrw;
+        %let induction=180;
+        %let latency=180;
+        %let ibd_def=ibd1;
+        %let intime= filldate2 ;
+        %let outtime= '31DEC2022'd ;
+        %let outdata= IT;
+        %LET save = N;
+    %analysis(exposure=&exposure, comparator=&comparator, ana_name=&ana_name, type=&type, weight=&weight, induction=&induction, latency=&latency, ibd_def=&ibd_def, intime=&intime, outtime=&outtime, outdata=&outdata, save=&save);
+    
+    /* endregion //!SECTION */
+    
 %CheckLog( ,ext=LOG,subdir=N,keyword=,exclude=,out=temp.Log_issues,pm=N,sound=N,relog=N,print=Y,to=,cc=,logdef=LOG,dirext=N,shadow=Y,abort=N,test=);

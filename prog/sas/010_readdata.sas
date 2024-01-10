@@ -31,7 +31,7 @@ D:\External Projects\UNC \Task231122 - IBDandDPP4I (db23-1)\Tasks\01 Get Cohort\
 
     Other details: CPRD-DPP4i project in collaboration with USB
 
-CHANGES: see github repo 
+CHANGES: see github repo @ https://github.com/jeannyww/dpp4i-IBD_2024.git 
 Date: 2023-12-16 05:36:00
 Notes: Cleaned up for macroprocessing 
 ***************************************/

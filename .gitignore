@@ -40,8 +40,7 @@ out/
 ref/
 test/
 macros/
-sas/macros/*.sas
-sas/test/
+prog/sas/macros/*.sas
 archive/
 .vscode/
 .sasjslint

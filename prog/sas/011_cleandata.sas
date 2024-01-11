@@ -5,24 +5,24 @@ Purpose: To clean the respective data into one obs per unique id for analysis an
 Author: JHW
 Creation Date:  Todays date: 2023-12-20 
 
-Output, programs (general &goutpath., tables &toutpath., and figures &foutpath.):
-        D:\Externe Projekte\UNC\wangje\out
-        D:\Externe Projekte\UNC\wangje\prog\sas
+    Program and output path:
+            D:\Externe Projekte\UNC\wangje\sas
+            D:\Externe Projekte\UNC\wangje\sas\prog
+            libname temp D:\Externe Projekte\UNC\wangje\data\temp
 
-Input paths:
+    Input paths:
             original raw data:  D:\Externe Projekte\UNC\Task231122 - IBDandDPP4I (db23-1)\Tasks\01 Get Cohort\results\2023-12-16
             libname a  D:\Externe Projekte\UNC\wangje\data\analysis
-            libname raw  D:\Externe Projekte\UNC\wangje\data\raw
-            libname temp  D:\Externe Projekte\UNC\wangje\data\temp
 Other details: CPRD-DPP4i project in collaboration with USB
 
-CHANGES:
-Date: see git 
-Notes: etc
+CHANGES: see git 
+Date: Date of Change
+Notes: Change Notes
 ***************************************/
 options nofmterr pageno=1 fullstimer stimer stimefmt=z compress=yes ;
-options macrogen symbolgen mlogic mprint mcompile mcompilenote=all; option MAUTOSOURCE;
-option SASAUTOS=(SASAUTOS "D:\Externe Projekte\UNC\wangje\prog\sas\macros");
+options macrogen symbolgen mlogic mprint mcompile mcompilenote=all; 
+option MAUTOSOURCE;option SASAUTOS=(SASAUTOS "D:\Externe Projekte\UNC\wangje\prog\sas\macros");
+
 %setup(programName=011_cleandata.sas, savelog=N, dataset=dataname);
 
 /*===================================*\
@@ -39,6 +39,24 @@ option SASAUTOS=(SASAUTOS "D:\Externe Projekte\UNC\wangje\prog\sas\macros");
 
 data tmpevent_ ; set raw.&drug._event ; run;
 
+/* deriving death date */
+proc sql;
+	create table correct_death as select distinct id, 
+			max(eventtype=8) as event8, max(eventtype=9) as event9 ,
+			max(case when eventtype=6 then eventdate else . end) as last_event6_dt format=date9.
+	from tmpevent_
+	group by id having event8=0 and event9=0;
+    
+quit;
+PROC SQL; 
+    create table _tmpevent_ as select a.*, 
+        (case when a.eventtype=6 then  1 else 0 end) as flag_death
+        from tmpevent_ as a 
+        left join
+        correct_death as b
+        on a.id=b.id and a.eventdate=b.last_event6_dt
+        order by id, eventdate;
+QUIT;
 proc sort data= tmpevent_; by id eventtype eventdate ; run;
 data _tmpevent_wide&drug.;
         set tmpevent_ ;
@@ -102,7 +120,9 @@ data _tmpevent_wide&drug.;
             badrx=1; 
             END;
         end; 
-        if eventtype = 7 then death_dt = eventdate;
+        *if eventtype = 7 then death_dt = eventdate;
+        *adding derived death below, but update to the above line when data are updated;
+        if flag_death = 1 then death_dt = last_event6_dt;
         if eventtype = 8 then dbexit_dt = eventdate;
         if eventtype = 9 then LastColl_Dt = eventdate;
         if last.id then output;
@@ -110,9 +130,18 @@ data _tmpevent_wide&drug.;
     run;
     
     PROC SQL; 
-        create table tmpevent_wide&drug. as select distinct a.*, b.time0 from _tmpevent_wide&drug. as a 
+        create table tmp2event_wide&drug. as select distinct a.*, b.time0 from _tmpevent_wide&drug. as a 
         inner join raw.&drug._trtmt as b on a.id = b.id;
-    QUIT;
+    quit;
+    /* you can also add derived event_type7 here as well   */
+/*     proc sql; 
+        create table tmpevent_wide&drug. as select a.*, b.last_event6_dt as death_dt
+        from tmp2event_wide&drug. as a 
+        left join 
+        (select b.id, b.correct_death from correct_death as b)
+        on a.id=b.id 
+        order by id;
+    QUIT; */
     
 
 %if &save. = Y %then %do;
@@ -138,7 +167,7 @@ data _tmpevent_wide&drug.;
 
 
 
-%macro get_useperiods ( druglist , grace, washout, save= N );
+%macro get_useperiods ( druglist , grace, washout, maxDaysP, save= N );
 
 %do z=1 %to %sysfunc(countw(&druglist.));
     %let drug=%scan(&druglist.,&z.);
@@ -159,10 +188,21 @@ data tmpRx_&drug._; set tmpRx_&drug.;
     startdt= time0-history ; format startdt date9.;
     enddt= min(death_dt, dbexit_dt, endstudy_dt); format enddt date9.; RUN;
 %let keeplist= dpp4i su sglt2i tzd gemscript BCSDP;
-    
-%useperiods(grace=&primaryGraceP, washout=&washoutp, wpgp=Y, daysimp=0, maxDays=, multiclaim=max,
-    inds= %str(tmpRx_&drug._ (where=(&drug.=1))), idvar=id, startenroll=startdt, rxdate=rxdate, endenroll=enddt, dayssup=rx_dayssupply, 
+%useperiods(
+    grace=&primaryGraceP, 
+    washout=&washoutp, 
+    wpgp=N, 
+    daysimp=0, 
+    maxDays=&maxDaysP,   
+    multiclaim=max,
+    inds= %str(tmpRx_&drug._ (where=(&drug.=1))), 
+    idvar=id, 
+    startenroll=startdt, 
+    rxdate=rxdate, 
+    endenroll=enddt, 
+    dayssup=rx_dayssupply, 
     keepvars= &keeplist, outds=&drug._useperiods);
+
     
 %if &save. = Y %then %do;
 
@@ -174,11 +214,12 @@ data tmpRx_&drug._; set tmpRx_&drug.;
 
 %LET druglist = dpp4i su tzd sglt2i ;
 %LET primaryGracep = 90;
-%LET washoutp = 365;
-%get_useperiods( druglist= &druglist. , grace= &primaryGracep, washout= &washoutp , save=Y);
+%LET washoutp = 360;
+%LET maxdaysaccum = 14; * Maximum days supply of drug a patient should be allowed to accumulate;
+%get_useperiods( druglist= &druglist. , grace= &primaryGracep, washout= &washoutp , maxDaysP=&maxdaysaccum ,save=Y);
 
 
-/* setting impute to 0 because of pascals' existing system to determine days supply:  "information on dosing instructions and duration may be incomplete, I have created an algorithm to fill in missing information as sensibly as possible.	For example, I look at the information from the last prescription. Or I use default values that we have previously determined. Thereby I look at how a medication was most frequently prescribed in the database and then use these values if I have no other information." */
+/* pascals' existing system to determine days supply:  "information on dosing instructions and duration may be incomplete, I have created an algorithm to fill in missing information as sensibly as possible.	For example, I look at the information from the last prescription. Or I use default values that we have previously determined. Thereby I look at how a medication was most frequently prescribed in the database and then use these values if I have no other information." */
     
     /* endregion //!SECTION */
 
@@ -209,13 +250,11 @@ proc sort data=tmpDemog_&drug._ out=temp.&drug._demog nodupkey;
     oadep_tot1yr mnri_bc mnri_gc mnri_bl mnri_tot1yr adep_bc adep_gc adep_bl adep_tot1yr pheny_bc pheny_gc pheny_bl pheny_tot1yr barbi_bc barbi_gc barbi_bl barbi_tot1yr succi_bc succi_gc succi_bl succi_tot1yr valpro_bc valpro_gc valpro_bl valpro_tot1yr carba_bc carba_gc carba_bl carba_tot1yr oaconvu_bc oaconvu_gc oaconvu_bl oaconvu_tot1yr aconvu_bc aconvu_gc aconvu_bl 
     aconvu_tot1yr isupp_bc isupp_gc isupp_bl isupp_tot1yr TnfAI_bc TnfAI_gc TnfAI_bl TnfAI_tot1yr Budeo_bc Budeo_gc Budeo_bl Budeo_tot1yr OtherImm_bc OtherImm_gc OtherImm_bl OtherImm_tot1yr CycloSpor_bc CycloSpor_gc CycloSpor_bl CycloSpor_tot1yr Iso_oral_bc Iso_oral_gc Iso_oral_bl Iso_oral_tot1yr Iso_top_bc Iso_top_gc Iso_top_bl Iso_top_tot1yr Myco_bc Myco_gc Myco_bl Myco_tot1yr Etan_bc Etan_gc Etan_bl Etan_tot1yr Ipili_bc Ipili_gc Ipili_bl Ipili_tot1yr Ritux_bc Ritux_gc Ritux_bl Ritux_tot1yr EndOfLine  ;
 run;
-proc sql noprint;
+proc sql;
 select count(unique id) as n from temp.&drug._demog; quit;
 /* tmpDemog_&drug. is our demographic variables dataset that we will merge into the analysis dataset when we are done */
 %end;
 %mend;
-
-
 %let druglist= dpp4i su  tzd sglt2i;
 %get_demog( druglist= &druglist. );
 /* endregion //!SECTION */

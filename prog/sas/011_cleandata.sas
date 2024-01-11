@@ -50,16 +50,16 @@ proc sql;
 quit;
 PROC SQL; 
     create table _tmpevent_ as select a.*, 
-        (case when a.eventtype=6 then  1 else 0 end) as flag_death
+        (case when a.eventtype=6 then  1 else 0 end) as flag_death, b.last_event6_dt
         from tmpevent_ as a 
         left join
         correct_death as b
         on a.id=b.id and a.eventdate=b.last_event6_dt
         order by id, eventdate;
 QUIT;
-proc sort data= tmpevent_; by id eventtype eventdate ; run;
+proc sort data= _tmpevent_; by id eventtype eventdate ; run;
 data _tmpevent_wide&drug.;
-        set tmpevent_ ;
+        set _tmpevent_ ;
         by id eventtype ; 
         length ibd1_code ibd2_code ibd3_code ibd4_code ibd5_code badrx_Bcode badRx_Gcode $ 10; 
         retain ibd1_dt ibd1_code ibd1
@@ -122,7 +122,7 @@ data _tmpevent_wide&drug.;
         end; 
         *if eventtype = 7 then death_dt = eventdate;
         *adding derived death below, but update to the above line when data are updated;
-        if flag_death = 1 then death_dt = last_event6_dt;
+        if flag_death = 1 then death_dt = eventdate;
         if eventtype = 8 then dbexit_dt = eventdate;
         if eventtype = 9 then LastColl_Dt = eventdate;
         if last.id then output;

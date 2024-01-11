@@ -406,71 +406,22 @@ run;
 %mend analysis;
 
 /* endregion //!SECTION */
-
-/*===================================*\
-//SECTION - Running macro 
-\*===================================*/
-/* region */
-
-    %analysis ( exposure= dpp4i , comparator= su, ana_name=main, type= IT, weight= smrw, induction= 180, latency= 180 , ibd_def= ibd1, intime= filldate2, outtime='31Dec2022'd , outdata=IT , save=N ) ;
-    %analysis ( exposure= dpp4i , comparator= tzd, ana_name=main, type= IT, weight= smrw, induction= 180, latency= 180 , ibd_def= ibd1, intime= filldate2, outtime='31Dec2022'd , outdata=IT , save=N ) ;
-    %analysis ( exposure= dpp4i , comparator= sglt2i, ana_name=main, type= IT, weight= smrw, induction= 180, latency= 180 , ibd_def= ibd1, intime= filldate2, outtime='31Dec2022'd , outdata=IT , save=N ) ;
-    
-        %macro table2(name, analysis);
-        Data table2_&analysis;
-            set ana.out_dppvsu_&name ana.out_dppvtzd_&name;
-                label time_Sum = "Person-year"
-                    event_Sum = "No. of Event";
-                format Nobs COMMA12. event_sum COMMA12. time_sum COMMA12. ;
-            run;
-            data table2_&analysis;
-                set table2_&analysis;
-            
-            options orientation=landscape;
-            ODS rtf FILE="&outpath./table2_&name._&analysis._%sysfunc(date(),date.).rtf";
-            PROC PRINT DATA=table2_&analysis;
-            title "&name &analysis";
-            RUN;
-            ODS rtf CLOSE;
-            %mend;
-        %table2(primary, primary)
-
-        ods excel file="&toutpath./Test.xlsx"
+        ods excel file="&toutpath./TestT2.xlsx"
           options (
             Sheet_interval="PROC"
             embedded_titles="NO"
             embedded_footnotes="NO"
         );
-        ods excel close;
-    
+    %analysis ( exposure= dpp4i , comparator= su, ana_name=main, type= IT, weight= smrw, induction= 180, latency= 180 , ibd_def= ibd1, intime= filldate2, outtime='31Dec2022'd , outdata=IT , save=N ) ;
+    %analysis ( exposure= dpp4i , comparator= tzd, ana_name=main, type= IT, weight= smrw, induction= 180, latency= 180 , ibd_def= ibd1, intime= filldate2, outtime='31Dec2022'd , outdata=IT , save=N ) ;
+    %analysis ( exposure= dpp4i , comparator= sglt2i, ana_name=main, type= IT, weight= smrw, induction= 180, latency= 180 , ibd_def= ibd1, intime= filldate2, outtime='31Dec2022'd , outdata=IT , save=N ) ;
     %analysis ( exposure= dpp4i , comparator= su, ana_name=main, type= AT, weight= smrw, induction= 180, latency= 180 , ibd_def= ibd1, intime= filldate2, outtime='31Dec2022'd , outdata=AT , save=N ) ;
     %analysis ( exposure= dpp4i , comparator= tzd, ana_name=main, type= AT, weight= smrw, induction= 180, latency= 180 , ibd_def= ibd1, intime= filldate2, outtime='31Dec2022'd , outdata=AT , save=N ) ;
     %analysis ( exposure= dpp4i , comparator= sglt2i, ana_name=main, type= AT, weight= smrw, induction= 180, latency= 180 , ibd_def= ibd1, intime= filldate2, outtime='31Dec2022'd , outdata=AT , save=N ) ;
-    
-    %LET outcomelist = ibd1 ibd2 ibd3 ibd4 ibd5 ;
-    /* *TODO - add logic loop for ibd2-ibd5, and badrx later */
-    
-    
-        data tmp; set out_: ;
-        run;
-        proc print data=tmp;
-        run;
-    
-    *tmp assignment for macro testing;
-        %LET exposure = dpp4i;
-        %let comparator=tzd;
-        %LET ana_name = mainIT;
-        %let type= IT;
-        %let weight=smrw;
-        %let induction=180;
-        %let latency=180;
-        %let ibd_def=ibd1;
-        %let intime= filldate2 ;
-        %let outtime= '31DEC2022'd ;
-        %let outdata= IT;
-        %LET save = N;
-    %analysis(exposure=&exposure, comparator=&comparator, ana_name=&ana_name, type=&type, weight=&weight, induction=&induction, latency=&latency, ibd_def=&ibd_def, intime=&intime, outtime=&outtime, outdata=&outdata, save=&save);
-    
-    /* endregion //!SECTION */
+
+
+	
     
 %CheckLog( ,ext=LOG,subdir=N,keyword=,exclude=,out=temp.Log_issues,pm=N,sound=N,relog=N,print=Y,to=,cc=,logdef=LOG,dirext=N,shadow=Y,abort=N,test=);
+
+ods excel close; 

@@ -6,6 +6,6 @@ macros
 test
 *.log
 .sasjslint
-workspace.code-workspace
+*.code-workspace
 tmp.txt
 *.txt

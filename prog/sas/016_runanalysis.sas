@@ -407,7 +407,7 @@ run;
 
 /* endregion //!SECTION */
         ods excel file="&toutpath./TestT2.xlsx"
-          options (
+        options (
             Sheet_interval="PROC"
             embedded_titles="NO"
             embedded_footnotes="NO"

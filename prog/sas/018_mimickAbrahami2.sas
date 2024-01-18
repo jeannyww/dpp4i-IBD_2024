@@ -87,19 +87,19 @@ outtime =  ,      *time which analysis fu ends, ie for AT: '31Dec2017'd, for ITT
         aconvu_tot1yr isupp_bc isupp_gc isupp_bl isupp_tot1yr TnfAI_bc TnfAI_gc TnfAI_bl TnfAI_tot1yr Budeo_bc Budeo_gc Budeo_bl Budeo_tot1yr OtherImm_bc OtherImm_gc OtherImm_bl OtherImm_tot1yr CycloSpor_bc CycloSpor_gc CycloSpor_bl CycloSpor_tot1yr Iso_oral_bc Iso_oral_gc Iso_oral_bl Iso_oral_tot1yr Iso_top_bc Iso_top_gc Iso_top_bl Iso_top_tot1yr Myco_bc Myco_gc Myco_bl Myco_tot1yr Etan_bc Etan_gc Etan_bl Etan_tot1yr Ipili_bc Ipili_gc Ipili_bl Ipili_tot1yr Ritux_bc Ritux_gc Ritux_bl Ritux_tot1yr EndOfLine  ;RUN;  
     data dsn; set _dsn;
        /* where entry=date of 2nd prescription */
-        oneyear  =&intime.+365.25;
-        twoyear=&intime.+730.5;
-        threeyear=&intime.+1095.75;
-        fouryear =&intime.+1460;
-        oneyearout  =oneyear   + &latency; 
-        twoyearout  =twoyear   + &latency;
-        threeyearout=threeyear + &latency;
-        fouryearout=fouryear + &latency;
-        format oneyearout   date9.;
-        format oneyear      date9.;
-        format twoyear      date9.;
-        format threeyear    date9.;
-        format fouryear     date9.;
+    oneyear  =indexdate+365.25;
+	twoyear=indexdate+730.5;
+	threeyear=indexdate+1095.75;
+	fouryear =indexdate+1460;
+	oneyearout  =oneyear   + &latency; 
+	twoyearout  =twoyear   + &latency;
+	threeyearout=threeyear + &latency;
+	fouryearout=fouryear + &latency;
+	format oneyearout   date9.;
+	format oneyear      date9.;
+	format twoyear      date9.;
+	format threeyear    date9.;
+	format fouryear     date9.;
     
         /* Coding in more time variables  */
         *rxchange: for switching one class from another class;
@@ -110,7 +110,16 @@ outtime =  ,      *time which analysis fu ends, ie for AT: '31Dec2017'd, for ITT
             endofdrug=rxchange+&latency;
     
         /* Initial Treatment */
+        if &exposure =0 and switchAugmentDate ne . then do;
+            /* for the individuals who switch from comparator to exposure: */
+            enddate= min(&ibd_def._dt, switchAugmentDate+&induction);
+            IF enddate>(&intime + &induction) and enddate=&ibd_def._dt and &ibd_def ne .    then event=1; else event=0;
+            end;
+        else do;
+            /* For the AT analysis of comparator users who never switched, and for all users of the dpp4 */
             enddate= min(&ibd_def._dt, enddt, endstudy_dt,&outtime, death_dt, dbexit_dt,  LastColl_Dt);
+            IF enddate>(&intime + &induction) and enddate=&ibd_def._dt and &ibd_def ne .    then event=1; else event=0;
+        end;
             format enddate date9. ; label enddate ="Date min of (&ibd_def._dt, enddt, endstudy_dt,&outtime, death_dt, dbexit_dt,  LastColl_Dt)";
             *"Date min of (&ibd_def._dt,death_dt, endstudy_dt, dbexit_dt, LastColl_Dt)";
             enddatedelete=min( &ibd_def._dt, enddt,endstudy_dt, &outtime);  
@@ -118,10 +127,10 @@ outtime =  ,      *time which analysis fu ends, ie for AT: '31Dec2017'd, for ITT
         *Removing individuals who did not reach the induction period for followup ;
         IF enddatedelete<=(&intime + &induction) then deleteobs=1; 
             else deleteobs=0;
-        IF enddate>(&intime + &induction) and enddate=&ibd_def._dt and &ibd_def ne .    then event=1; else event=0;
+
     
         time=(enddate-(&intime.+&induction)+1)/365.25;
-        time_drugdur=(min(rxchange, enddate)-(&intime.+1))/365.25;
+        time_drugdur=(min(rxchange, enddate)-(indexdate+1))/365.25;    
     
         if time>0 then logtime=(log(time/100000))  ;
         else time=.;
@@ -130,6 +139,7 @@ outtime =  ,      *time which analysis fu ends, ie for AT: '31Dec2017'd, for ITT
     RUN;
 
     data dsn; set dsn; if deleteobs=1 then delete; run;
+/* testing with individual observations */
 
 PROC SQL;
     create table tmp as

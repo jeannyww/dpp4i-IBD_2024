@@ -279,7 +279,7 @@ proc print data=temp.exclusions_012_&exposure._&comparator.; run;
     set tmp_counts;RUN;
     %end;
 %end;
-%mend;
+%mend mergeall;
 
 
 /* endregion //!SECTION */

@@ -30,130 +30,188 @@ option MAUTOSOURCE;option SASAUTOS=(SASAUTOS "D:\Externe Projekte\UNC\wangje\pro
 \*===================================*/
 /* region */
 
-/*cleanevents*/
-*descrip;
+/* Macro */
 %macro cleanevents ( Druglist , save= N );
 
-%do i=1 %to %sysfunc(countw(&druglist.));
-%let drug=%scan(&druglist.,&i.);
-
-data tmpevent_ ; set raw.&drug._event ; run;
-
-/* deriving death date */
-proc sql;
-	create table correct_death as select distinct id, 
-			max(eventtype=8) as event8, max(eventtype=9) as event9 ,
-			max(case when eventtype=6 then eventdate else . end) as last_event6_dt format=date9.
-	from tmpevent_
-	group by id having event8=0 and event9=0;
+    %do i=1 %to %sysfunc(countw(&druglist.));
+    %let drug=%scan(&druglist.,&i.);
     
-quit;
-PROC SQL; 
-    create table _tmpevent_ as select a.*, 
-        (case when a.eventtype=6 then  1 else 0 end) as flag_death, b.last_event6_dt
-        from tmpevent_ as a 
-        left join
-        correct_death as b
-        on a.id=b.id and a.eventdate=b.last_event6_dt
-        order by id, eventdate;
-QUIT;
-proc sort data= _tmpevent_; by id eventtype eventdate ; run;
-data _tmpevent_wide&drug.;
-        set _tmpevent_ ;
-        by id eventtype ; 
-        length ibd1_code ibd2_code ibd3_code ibd4_code ibd5_code badrx_Bcode badRx_Gcode $ 10; 
-        retain ibd1_dt ibd1_code ibd1
-            ibd2_dt ibd2_code ibd2
-            ibd3_dt ibd3_code ibd3
-            ibd4_dt ibd4tx_dt ibd4_code ibd4
-            ibd5_dt ibd5_code ibd5
-            badrx_dt badrx_Bcode badrx_Gcode badrx
-            death_dt dbexit_dt LastColl_Dt endstudy_dt;
-        format ibd1_dt ibd2_dt ibd3_dt ibd4_dt ibd4tx_dt ibd5_dt badrx_dt death_dt dbexit_dt LastColl_Dt endstudy_dt date9.;
+    data tmpevent_ ; set raw.&drug._event ; run;
     
-        if first.id then do;
-            ibd1_dt = .; ibd1_code = ""; ibd1 = .;
-            ibd2_dt = .; ibd2_code = ""; ibd2 = .;
-            ibd3_dt = .; ibd3_code = ""; ibd3 = .;
-            ibd4_dt = .; ibd4tx_dt = .; ibd4_code = ""; ibd4 = .;
-            ibd5_dt = .; ibd5_code = ""; ibd5 = .;
-            badrx_dt = .; badrx_Bcode = ""; badrx_Gcode = ""; badrx=.;
-            death_dt = .; dbexit_dt = .; LastColl_Dt = .; endstudy_dt = '31DEC2022'd;
-        end;
-    
-        if eventtype = 1 then do;
-            ibd1_dt = eventdate;
-            ibd1_code = readcode;
-            ibd1 = 1;
-        end; 
-    
-        if eventtype = 2 then do;
-            ibd2_dt = eventdate;
-            ibd2_code = readcode;
-            ibd2 = 1;
-        end; 
-    
-        if eventtype = 3 then do;
-            ibd3_dt = eventdate;
-            ibd3_code = readcode;
-            ibd3 = 1;
-        end; 
-    
-        if eventtype = 4 then do;
-            ibd4_dt = eventdate;
-            ibd4tx_dt = eventdate_tx;
-            ibd4_code = readcode;
-            ibd4 = 1;
-        end; 
-    
-        if eventtype = 5 then do;
-            ibd5_dt = eventdate;
-            ibd5_code = readcode;
-            ibd5 = 1;
-        end; 
-    
-        if eventtype = 6 then do;
-            if first.eventtype then do; 
-            badrx_dt = eventdate;
-            badrx_Bcode = badrx_Bcode;
-            badrx_Gcode = badrx_Gcode;
-            badrx=1; 
-            END;
-        end; 
-        *if eventtype = 7 then death_dt = eventdate;
-        *adding derived death below, but update to the above line when data are updated;
-        if flag_death = 1 then death_dt = eventdate;
-        if eventtype = 8 then dbexit_dt = eventdate;
-        if eventtype = 9 then LastColl_Dt = eventdate;
-        if last.id then output;
-        drop eventtype eventdate readcode eventdate_tx endofline ;
-    run;
-    
-    PROC SQL; 
-        create table tmp2event_wide&drug. as select distinct a.*, b.time0 from _tmpevent_wide&drug. as a 
-        inner join raw.&drug._trtmt as b on a.id = b.id;
+    /* deriving death date */
+    proc sql;
+        create table correct_death as select distinct id, 
+                max(eventtype=8) as event8, max(eventtype=9) as event9 ,
+                max(case when eventtype=6 then eventdate else . end) as last_event6_dt format=date9.
+        from tmpevent_
+        group by id having event8=0 and event9=0;
     quit;
-    /* you can also add derived event_type7 here as well   */
-/*     proc sql; 
-        create table tmpevent_wide&drug. as select a.*, b.last_event6_dt as death_dt
-        from tmp2event_wide&drug. as a 
-        left join 
-        (select b.id, b.correct_death from correct_death as b)
-        on a.id=b.id 
-        order by id;
-    QUIT; */
-    
+    PROC SQL; 
+        create table _tmpevent_ as select a.*, 
+            (case when a.eventtype=6 then  1 else 0 end) as flag_death, b.last_event6_dt
+            from tmpevent_ as a 
+            left join
+            correct_death as b
+            on a.id=b.id and a.eventdate=b.last_event6_dt
+            order by id, eventdate;
+    QUIT;
+    proc sort data= _tmpevent_; by id eventtype eventdate ; run;
 
-%if &save. = Y %then %do;
-    data temp.&drug._eventwide; set tmpevent_wide&drug.; run;
-    %end;
-%else %do; %end; %end;
-%mend cleanevents;
+    data _tmpevent_wide&drug.;
+            set _tmpevent_ ;
+            by id eventtype ; 
+            length ibd1_code ibd2_code ibd3_code ibd4_code ibd5_code badrx_Bcode badRx_Gcode $ 10; 
+            retain ibd1_dt ibd1_code ibd1
+                ibd2_dt ibd2_code ibd2
+                ibd3_dt ibd3_code ibd3
+                ibd4_dt ibd4tx_dt ibd4_code ibd4
+                ibd5_dt ibd5_code ibd5
+                badrx_dt badrx_Bcode badrx_Gcode badrx
+                death_dt dbexit_dt LastColl_Dt endstudy_dt;
+            format ibd1_dt ibd2_dt ibd3_dt ibd4_dt ibd4tx_dt ibd5_dt badrx_dt death_dt dbexit_dt LastColl_Dt endstudy_dt date9.;
+        
+            if first.id then do;
+                ibd1_dt = .; ibd1_code = ""; ibd1 = .;
+                ibd2_dt = .; ibd2_code = ""; ibd2 = .;
+                ibd3_dt = .; ibd3_code = ""; ibd3 = .;
+                ibd4_dt = .; ibd4tx_dt = .; ibd4_code = ""; ibd4 = .;
+                ibd5_dt = .; ibd5_code = ""; ibd5 = .;
+                badrx_dt = .; badrx_Bcode = ""; badrx_Gcode = ""; badrx=.;
+                death_dt = .; death = .;
+                dbexit_dt = .; dbexit = .;  
+                LastColl_Dt = .; lastcoll=.; endstudy_dt = '31DEC2022'd;
+            end;
+        
+            if eventtype = 1 then do;
+                ibd1_dt = eventdate;
+                ibd1_code = readcode;
+                ibd1 = 1;
+            end; 
+        
+            if eventtype = 2 then do;
+                ibd2_dt = eventdate;
+                ibd2_code = readcode;
+                ibd2 = 1;
+            end; 
+        
+            if eventtype = 3 then do;
+                ibd3_dt = eventdate;
+                ibd3_code = readcode;
+                ibd3 = 1;
+            end; 
+        
+            if eventtype = 4 then do;
+                ibd4_dt = eventdate;
+                ibd4tx_dt = eventdate_tx;
+                ibd4_code = readcode;
+                ibd4 = 1;
+            end; 
+        
+            if eventtype = 5 then do;
+                ibd5_dt = eventdate;
+                ibd5_code = readcode;
+                ibd5 = 1;
+            end; 
+        
+            if eventtype = 6 then do;
+                if first.eventtype then do; 
+                badrx_dt = eventdate;
+                badrx_Bcode = badrx_Bcode;
+                badrx_Gcode = badrx_Gcode;
+                badrx=1; 
+                END;
+            end; 
+            *if eventtype = 7 then death_dt = eventdate;
+            *adding derived death below, but update to the above line when data are updated;
+            if flag_death = 1 then do;
+                death_dt = last_event6_dt;
+                death = 1; end;
+            if eventtype = 8 then  do; 
+                dbexit_dt = eventdate;
+                dbexit = 1; end;
+            if eventtype = 9 then do; 
+                LastColl_Dt = eventdate;
+                LastColl = 1; end;
+            if last.id then output;
+            drop eventtype eventdate readcode eventdate_tx endofline ;
+        run;
+        
+        PROC SQL; 
+            create table tmpevent_wide&drug. as select distinct a.*, b.time0 from _tmpevent_wide&drug. as a 
+            inner join raw.&drug._trtmt as b on a.id = b.id;
+        quit;
+        /* you can also add derived event_type7 here as well   */
+    /*     proc sql; 
+            create table tmpevent_wide&drug. as select a.*, b.last_event6_dt as death_dt
+            from tmp2event_wide&drug. as a 
+            left join 
+            (select b.id, b.correct_death from correct_death as b)
+            on a.id=b.id 
+            order by id;
+        QUIT; */
+        
+    
+    %if &save. = Y %then %do;
+        data temp.&drug._eventwide; set tmpevent_wide&drug.; run;
+        %end;
+    %else %do; %end; %end;
+    %mend cleanevents;
+    
+%LET druglist = dpp4i su tzd sglt2i;
+%cleanevents(  druglist=&druglist., save=Y );
+   
 
 %LET druglist = dpp4i su tzd sglt2i;
 %cleanevents(  druglist=&druglist., save=Y );
+    
 
+ods excel file="&toutpath./Test_eventsfreqs&todaysdate..xlsx"
+options (
+    Sheet_interval="NONE"
+    embedded_titles="NO"
+    embedded_footnotes="NO"
+);
 
+ods excel options(sheet_name="dpp4i"    sheet_interval="NOW");
+%LET drug = dpp4i;
+PROC FREQ DATA=temp.&drug._eventwide;
+TABLES ibd1-ibd5 badrx death dbexit LastColl /list missing;
+RUN;
+proc means data=temp.&drug._eventwide 
+    STACKODS N NMISS MEAN STD MIN MAX Q1 MEDIAN Q3   ;
+var  death_dt dbexit_dt LastColl_Dt ; 
+run;
+ods excel options(sheet_name="su"    sheet_interval="NOW");
+%LET Drug = su;
+PROC FREQ DATA=temp.&drug._eventwide;
+TABLES ibd1-ibd5 badrx death dbexit LastColl /list missing;
+RUN;
+proc means data=temp.&drug._eventwide
+    STACKODS N NMISS MEAN STD MIN MAX Q1 MEDIAN Q3   ;
+var  death_dt dbexit_dt LastColl_Dt ;
+run;
+    ods excel options(sheet_name="tzd"    sheet_interval="NOW");
+%LET drug = tzd;
+PROC FREQ DATA=temp.&drug._eventwide;
+TABLES ibd1-ibd5 badrx death dbexit LastColl /list missing;
+RUN;
+
+proc means data=temp.&drug._eventwide
+    STACKODS N NMISS MEAN STD MIN MAX Q1 MEDIAN Q3   ;
+var  death_dt dbexit_dt LastColl_Dt ;
+run;
+ods excel options(sheet_name="sglt2i"    sheet_interval="NOW");
+%LET drug = sglt2i;
+PROC FREQ DATA=temp.&drug._eventwide;
+    TABLES ibd1-ibd5 badrx death dbexit LastColl /list missing;
+RUN;
+proc means data=temp.&drug._eventwide
+    STACKODS N NMISS MEAN STD MIN MAX Q1 MEDIAN Q3   ;
+var  death_dt dbexit_dt LastColl_Dt ;
+run;
+ods text="";
+    ods excel close;
+    
 /* endregion //!SECTION */
 
 

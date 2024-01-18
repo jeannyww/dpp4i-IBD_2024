@@ -99,7 +99,7 @@ data dsn; set a.ps_&exposure._&comparator;
 
     /* Coding in more time variables  */
     *rxchange: for switching one class from another class;
-        rxchange=min(DiscontDate, enddt, switchAugmentDate);
+        rxchange=min(DiscontDate, enddt,  switchAugmentDate);
         label rxchange='MIN of DisconDate, End of Continuous Enrollment, SwitchAugmentDate';
         format rxchange date9.;
     *end of drug in the drug class; 

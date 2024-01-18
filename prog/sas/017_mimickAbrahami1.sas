@@ -747,9 +747,9 @@ ods excel options(sheet_name="DPP4i_SU_plots" sheet_interval="NOW");
     goptions iback="&foutpath./Abrahami_psplot_trim_dpp4i_SU&todaysdate..png" imagestyle=fit;
     proc gslide;RUN; quit  ; goptions reset=all;
     ods text="PS model:  &addedDPP4ivSU.  &basevars. &interactions. ";
-ods excel options(sheet_name="DPP4i_SU_flowchart" sheet_interval="NOW");
+/* ods excel options(sheet_name="DPP4i_SU_flowchart" sheet_interval="NOW");
     proc print data=temp.exclusions_015_dpp4i_su noobs ; run;
-
+ */
     *dpp4i vs TZD;
 ods excel options(sheet_name="DPP4i_TZD" sheet_interval="NOW");
     proc print data=table1_dpp4ivTZD noobs label; var row dpp4i tzd sdiff tzd_wgt sdiff_wgt; run;
@@ -759,9 +759,9 @@ ods excel options(sheet_name="DPP4i_TZD_plots" sheet_interval="NOW");
     goptions iback="&foutpath./Abrahami_psplot_trim_dpp4i_TZD&todaysdate..png" imagestyle=fit;
     proc gslide;RUN; quit; goptions reset=all;
     ods text="PS model:  &addedDPP4ivTZD.  &basevars. &interactions. ";
-ods excel options(sheet_name="DPP4i_TZD_flowchart" sheet_interval="NOW");
+/* ods excel options(sheet_name="DPP4i_TZD_flowchart" sheet_interval="NOW");
     proc print data=temp.exclusions_015_dpp4i_tzd noobs ; run;
-
+ */
     *dpp4i vs SGLT2i;
 ods excel options(sheet_name="DPP4i_SGLT2i" sheet_interval="NOW");
     proc print data=table1_dpp4ivSGLT2i noobs label; var row dpp4i sglt2i sdiff sglt2i_wgt sdiff_wgt; run;
@@ -771,9 +771,9 @@ ods excel options(sheet_name="DPP4i_SGLT2i_plots" sheet_interval="NOW");
     goptions iback="&foutpath./Abrahami_psplot_trim_dpp4i_SGLT2i&todaysdate..png" imagestyle=fit;
     proc gslide;RUN; quit;    goptions reset=all;
     ods text="PS model:  &addedDPP4ivSGLT2i.  &basevars. &interactions. ";
-ods excel options(sheet_name="DPP4i_SGLT2i_flowchart" sheet_interval="NOW");
+/* ods excel options(sheet_name="DPP4i_SGLT2i_flowchart" sheet_interval="NOW");
     proc print data=temp.exclusions_015_dpp4i_sglt2i noobs ; run;
-
+ */
     *log summary;
 ods excel options(sheet_name="Log_issues" sheet_interval="NOW");
     proc print data=temp.Log_issues noobs ; run;

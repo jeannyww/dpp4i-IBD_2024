@@ -235,7 +235,7 @@ ods text="";
 proc sql;
     create table tmpRx_&drug. as
     select * from 
-        (select a.id, a.rxdate, a.time0, a.history, a.gemscript, a.BCSDP, a.rx_dayssupply, a.DPP4i, a.SU, a.SGLT2i, a.TZD 
+        (select a.id, a.rxdate, a.time0, a.history, a.gemscript, a.BCSDP, a.rx_dayssupply, a.DPP4i, a.SU,a.TZD  ,a.SGLT2i
         from tmptrtmt_ as a ) 
         left join 
         (select * from tmpevent_wide&drug. as b)
@@ -245,7 +245,7 @@ quit;
 data tmpRx_&drug._; set tmpRx_&drug.;
     startdt= time0-history ; format startdt date9.;
     enddt= min(death_dt, dbexit_dt, endstudy_dt); format enddt date9.; RUN;
-%let keeplist= dpp4i su sglt2i tzd gemscript BCSDP;
+%let keeplist= dpp4i su  tzd sglt2i gemscript BCSDP;
 %useperiods(
     grace=&primaryGraceP, 
     washout=&washoutp, 

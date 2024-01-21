@@ -27,11 +27,12 @@ option SASAUTOS=(SASAUTOS "D:\Externe Projekte\UNC\wangje\prog\sas\macros");
 
 
 /* Starting with exclusions box 0 to add sequentially to get all counts for each ACNU  */
+/* these are from D:\Externe Projekte\UNC\Task231122 - IBDandDPP4I (db23-1)\Tasks\01 Get Cohort\results\2023-12-16\Task231122_01_231122_Report.txt*/
 data temp.exclusions_box0_all;
     retain exclusion_num long_text; 
     length long_text $200;
     infile datalines delimiter='|' dsd missover;
-    input exclusion_num long_text $  dpp4i su tzd sglt2i full;
+    input exclusion_num long_text $  dpp4i su sglt2i tzd  full;
     datalines;
     1|Number of patients within the CPRD|||||21120880
     2|correct sex (female or male)|||||21119778

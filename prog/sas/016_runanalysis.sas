@@ -406,7 +406,7 @@ run;
 %mend analysis;
 
 /* endregion //!SECTION */
-        ods excel file="&toutpath./TestT2.xlsx"
+        ods excel file="&toutpath./TestT2_compiled_&todaysdate..xlsx"
         options (
             Sheet_interval="PROC"
             embedded_titles="NO"

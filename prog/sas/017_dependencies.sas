@@ -1,9 +1,9 @@
 /***************************************
-SAS file name: 017_mimickAbrahami.sas
+SAS file name: 017_dependencies.sas
 
-Purpose: to recreate cohorts a la Abrahami et. al 2018 methods for DPP4i and IBD risk
+Purpose: For central management of all macro dependencies for the analysis part of mimicking Abrahami's methods. 
 Author: JHW
-Creation Date: 2024-01-17
+Creation Date: 2024-01-21
 
 Output, programs (general &goutpath., tables &toutpath., and figures &foutpath.):
         D:\Externe Projekte\UNC\wangje\out
@@ -17,13 +17,14 @@ Input paths:
 Other details: CPRD-DPP4i project in collaboration with USB
 
 CHANGES:
-Date: 2024-01-17
-Notes: see git @jeannywwy   
+Date: 2024-01-21
+Notes: harmonized macros 017_mimickAbrahami1.sas and 017_mimickAbrahami2.sas into 017_dependencies.sas. 
 ***************************************/
-options nofmterr pageno=1 fullstimer stimer stimefmt=z compress=yes ;
 options macrogen symbolgen mlogic mprint mcompile mcompilenote=all; option MAUTOSOURCE;
 option SASAUTOS=(SASAUTOS "D:\Externe Projekte\UNC\wangje\prog\sas\macros");
-%setup(programName=017_mimickAbrahami.sas, savelog=N, dataset=temp);
+%setup(programName=017_dependencies, savelog=N, dataset=_NULL_);
+
+* Here I have included all dependencies specific to the Analysis a la Abrahami, which are not to be generalized or utilized for main analysis ACNU that are true to the correct ACNU methods, therefore these macros are not included in the main SASAUTOS macro library;
 
 /*===================================*\
 //SECTION - Get cohorts a la Abrahami, adapted from 012_createcohorts.sas
@@ -90,11 +91,6 @@ option SASAUTOS=(SASAUTOS "D:\Externe Projekte\UNC\wangje\prog\sas\macros");
     %end;
 %end;
 %mend getCohortAbrahami;
-
-/* execute the macro */
-%LET exposure = dpp4i;
-%LET comparatorlist = su tzd sglt2i;
-%getCohortAbrahami (exposure=&exposure.,comparatorlist= &comparatorlist.,washoutp= 365, save= Y);
 
 /* endregion //!SECTION */
 
@@ -326,10 +322,6 @@ QUIT;
 %end;
 %mend mergeall;
 
-
-%LET comparatorlist = su tzd sglt2i;
-%mergeall(exposure=dpp4i, comparatorlist=&comparatorlist., primaryGraceP=90, washoutp=365, save=Y);
-
 /* endregion //!SECTION */
 
 /*===================================*\
@@ -368,15 +360,6 @@ RUN;
 %end;
 %mend createana;
 
-/* *SECTION run the macro */
-/* %LET exposure = dpp4i;
-%LET comparator = sglt2i;
-%createana(exposure=&exposure, comparatorlist=&comparatorlist, save=N); */
-%LET exposure = dpp4i;
-%LET comparatorlist = su tzd sglt2i;
-%createana(exposure=&exposure, comparatorlist=&comparatorlist, save=Y);
-
-
 /* endregion //!SECTION */
 
 
@@ -384,7 +367,6 @@ RUN;
 //SECTION - PS weighting adapted from 015_PSweighting.sas
 \*===================================*/
 /* region */
-
 %macro psweighting ( exposure , comparator , weight , addedmodelvars ,basemodelvars , tablerowvars, refyear  , dat, save );
 
     data tmp1;
@@ -650,136 +632,352 @@ RUN;
     proc print data=table1_&exposure.v&comparator. noobs label; var row &exposure &comparator sdiff &comparator._wgt sdiff_wgt; run;
     ods rtf close;
 
-    %mend psweighting;
+%mend psweighting;
 
-/* endregion //!SECTION */
 /* endregion //!SECTION */
 
 /*===================================*\
-//SECTION - Execute Macro 
-PS weighting with Abrahami covariates:
-- Adjusted for age, sex, year of cohort entry, body mass index, alcohol related disorders (including alcoholism, alcoholic cirrhosis of liver, alcoholic hepatitis,
-- and hepatic failure), smoking status, haemoglobin A1c (last lab result b4 cohort entry), 
-- at any time before cohort entry: microvascular (nephropathy, neuropathy, retinopathy) and macrovascular (myocardial infarction,stroke, peripheral arteriopathy) complications of diabetes, 
-- duration of treated diabetes,
-- antidiabetic drugs used before cohort entry, 
-- use of aspirin, nonsteroidal
-- anti-inflammatory drugs, hormonal replacement therapy, oral contraceptives, other autoimmune conditions, 
-- total number of unique non-diabetic drugs in year before cohort entry.
+//SECTION - Analysis a la Abrahami, adapted from 016_analysis.sas
 \*===================================*/
 /* region */
 
-*  %LET tablerowvarsi =   age  sex entry_year   bmi_cat2 alcohol_cat smoke_cat hba1c_Cat2  
-*  nephr_ever nerop_ever dret_ever mi_ever stroke_ever PerArtD_ever /* duration_metformin */  dpp4i_ever SU_ever TZD_ever sglt2i_ever insulin_ever /* other oad  */   bigua_ever  prand_ever agluco_ever OAntGLP_ever    /* other */ ass_ever allnsa_ever hrtopp_ever estr_ever gesta_ever pill_ever /* Autoimmune */psorp_ever vasc_ever RhArth_Ever SjSy_Ever sLup_ever /* other drugs */num_nondmdrugs1yr num_nondmdrugs1yr_cat;
+%macro analysis ( exposure , comparator , ana_name , type , weight , induction , latency , ibd_def , intime , outtime , outdata, save ) / minoperator mindelimiter=',';
 
-*  %LET interactions =     /* Interaction */ ;
-*  %LET basevars =  age|age  sex entry_year   bmi_cat2 alcohol_cat smoke_cat hba1c_Cat2  nephr_ever nerop_ever dret_ever mi_ever stroke_ever PerArtD_ever bigua_ever  agluco_ever ass_ever allnsa_ever hrtopp_ever estr_ever gesta_ever pill_ever psorp_ever vasc_ever RhArth_Ever SjSy_Ever sLup_ever num_nondmdrugs1yr ;
-*  %LET addedDPP4ivSU = oAntGLP_1yrlookback sglt2i_1yrlookback TZD_1yrlookback;
-*  %let addedmodelvars= &addedDPP4ivSU;
-*  %let basemodelvars= &basevars. &interactions. ;
-*  %let tablerowvars= &tablerowvarsi;
+    /*===================================*\
+    //SECTION - Setting up data for analysis 
+    \*===================================*/
+    /* region */
+    
+    data _dsn; set a.abrahami_ps_&exposure._&comparator;
+        drop Alc_P_bc Alc_P_bl colo_bc colo_bl IBD_P_bc IBD_P_bl DivCol_I_bc DivCol_I_bl DivCol_P_bc DivCol_P_bl PCOS_bc PCOS_bl DiabGest_bc DiabGest_bl IBD_I_bc IBD_I_bl asthma_bc asthma_bl copd_bc copd_bl arrhyth_bc arrhyth_bl chf_bc chf_bl ihd_bc ihd_bl mi_bc mi_bl hyperten_bc hyperten_bl stroke_bc stroke_bl hyperlip_bc hyperlip_bl diab_bc diab_bl dvt_bc dvt_bl pe_bc pe_bl gout_bc 
+        gout_bl pthyro_bc pthyro_bl mthyro_bc mthyro_bl depres_bc depres_bl affect_bc affect_bl suic_bc suic_bl sleep_bc sleep_bl schizo_bc schizo_bl epilep_bc epilep_bl renal_bc renal_bl GIulcer_bc GIulcer_bl RhArth_bc RhArth_bl alrhi_bc alrhi_bl glauco_bc glauco_bl migra_bc migra_bl sepsis_bc sepsis_bl pneumo_bc pneumo_bl nephr_bc nephr_bl nerop_bc nerop_bl dret_bc dret_bl psorI_bc psorI_bl psorP_bc psorP_bl vasc_bc vasc_bl SjSy_bc SjSy_bl sLup_bc sLup_bl PerArtD_bc PerArtD_bl AbdPain_bc AbdPain_bl Diarr_bc Diarr_bl BkStool_bc BkStool_bl Crohns_bc 
+        Crohns_bl Ucolitis_bc Ucolitis_bl Icomitis_bc Icomitis_bl Gastent_bc Gastent_bl ColIle_bc ColIle_bl Sigmo_bc Sigmo_bl Biops_bc Biops_bl Ileo_bc Ileo_bl HBA1c_bc HBA1c_bl DPP4i_bc DPP4i_gc DPP4i_bl DPP4i_tot1yr SU_bc SU_gc SU_bl SU_tot1yr SGLT2i_bc SGLT2i_gc SGLT2i_bl SGLT2i_tot1yr TZD_bc TZD_gc TZD_bl TZD_tot1yr Insulin_bc Insulin_gc Insulin_bl Insulin_tot1yr bigua_bc bigua_gc bigua_bl bigua_tot1yr prand_bc prand_gc prand_bl prand_tot1yr agluco_bc agluco_gc agluco_bl agluco_tot1yr OAntGLP_bc OAntGLP_gc OAntGLP_bl OAntGLP_tot1yr AminoS_bc 
+        AminoS_gc AminoS_bl AminoS_tot1yr Mesal_bc Mesal_gc Mesal_bl Mesal_tot1yr Sulfas_bc Sulfas_gc Sulfas_bl Sulfas_tot1yr Olsala_bc Olsala_gc Olsala_bl Olsala_tot1yr Balsal_bc Balsal_gc Balsal_bl Balsal_tot1yr ace_bc ace_gc ace_bl ace_tot1yr arb_bc arb_gc arb_bl arb_tot1yr bb_bc bb_gc bb_bl bb_tot1yr ccb_bc ccb_gc ccb_bl ccb_tot1yr nitrat_bc nitrat_gc nitrat_bl nitrat_tot1yr coronar_bc coronar_gc coronar_bl coronar_tot1yr antiarr_bc antiarr_gc antiarr_bl antiarr_tot1yr thrombo_bc thrombo_gc thrombo_bl thrombo_tot1yr antivitk_bc antivitk_gc 
+        antivitk_bl antivitk_tot1yr hepar_bc hepar_gc hepar_bl hepar_tot1yr stat_bc stat_gc stat_bl stat_tot1yr fib_bc fib_gc fib_bl fib_tot1yr lla_bc lla_gc lla_bl lla_tot1yr thiaz_bc thiaz_gc thiaz_bl thiaz_tot1yr loop_bc loop_gc loop_bl loop_tot1yr kspar_bc kspar_gc kspar_bl kspar_tot1yr diurcom_bc diurcom_gc diurcom_bl diurcom_tot1yr thiaantih_bc thiaantih_gc thiaantih_bl thiaantih_tot1yr diurall_bc diurall_gc diurall_bl diurall_tot1yr ass_bc ass_gc ass_bl ass_tot1yr asscvd_bc asscvd_gc asscvd_bl asscvd_tot1yr allnsa_bc allnsa_gc allnsa_bl allnsa_tot1yr 
+        para_bc para_gc para_bl para_tot1yr bago_bc bago_gc bago_bl bago_tot1yr abago_bc abago_gc abago_bl abago_tot1yr opio_bc opio_gc opio_bl opio_tot1yr acho_bc acho_gc acho_bl acho_tot1yr sterinh_bc sterinh_gc sterinh_bl sterinh_tot1yr lra_bc lra_gc lra_bl lra_tot1yr xant_bc xant_gc xant_bl xant_tot1yr ahist_bc ahist_gc ahist_bl ahist_tot1yr ahistc_bc ahistc_gc ahistc_bl ahistc_tot1yr h2_bc h2_gc h2_bl h2_tot1yr ppi_bc ppi_gc ppi_bl ppi_tot1yr IBD_bc IBD_gc IBD_bl IBD_tot1yr thyro_bc thyro_gc thyro_bl thyro_tot1yr sterint_bc sterint_gc sterint_bl 
+        sterint_tot1yr stersys_bc stersys_gc stersys_bl stersys_tot1yr stertop_bc stertop_gc stertop_bl stertop_tot1yr gesta_bc gesta_gc gesta_bl gesta_tot1yr pill_bc pill_gc pill_bl pill_tot1yr HRTopp_bc HRTopp_gc HRTopp_bl HRTopp_tot1yr estr_bc estr_gc estr_bl estr_tot1yr adem_bc adem_gc adem_bl adem_tot1yr apsy_bc apsy_gc apsy_bl apsy_tot1yr benzo_bc benzo_gc benzo_bl benzo_tot1yr hypno_bc hypno_gc hypno_bl hypno_tot1yr ssri_bc ssri_gc ssri_bl ssri_tot1yr li_bc li_gc li_bl li_tot1yr mao_bc mao_gc mao_bl mao_tot1yr oadep_bc oadep_gc oadep_bl 
+        oadep_tot1yr mnri_bc mnri_gc mnri_bl mnri_tot1yr adep_bc adep_gc adep_bl adep_tot1yr pheny_bc pheny_gc pheny_bl pheny_tot1yr barbi_bc barbi_gc barbi_bl barbi_tot1yr succi_bc succi_gc succi_bl succi_tot1yr valpro_bc valpro_gc valpro_bl valpro_tot1yr carba_bc carba_gc carba_bl carba_tot1yr oaconvu_bc oaconvu_gc oaconvu_bl oaconvu_tot1yr aconvu_bc aconvu_gc aconvu_bl 
+        aconvu_tot1yr isupp_bc isupp_gc isupp_bl isupp_tot1yr TnfAI_bc TnfAI_gc TnfAI_bl TnfAI_tot1yr Budeo_bc Budeo_gc Budeo_bl Budeo_tot1yr OtherImm_bc OtherImm_gc OtherImm_bl OtherImm_tot1yr CycloSpor_bc CycloSpor_gc CycloSpor_bl CycloSpor_tot1yr Iso_oral_bc Iso_oral_gc Iso_oral_bl Iso_oral_tot1yr Iso_top_bc Iso_top_gc Iso_top_bl Iso_top_tot1yr Myco_bc Myco_gc Myco_bl Myco_tot1yr Etan_bc Etan_gc Etan_bl Etan_tot1yr Ipili_bc Ipili_gc Ipili_bl Ipili_tot1yr Ritux_bc Ritux_gc Ritux_bl Ritux_tot1yr EndOfLine  ;RUN;  
+    data dsn; set _dsn;
+       /* where entry=date of 2nd prescription */
+    oneyear  =indexdate+365.25;
+	twoyear=indexdate+730.5;
+	threeyear=indexdate+1095.75;
+	fouryear =indexdate+1460;
+	oneyearout  =oneyear   + &latency; 
+	twoyearout  =twoyear   + &latency;
+	threeyearout=threeyear + &latency;
+	fouryearout=fouryear + &latency;
+	format oneyearout   date9.;
+	format oneyear      date9.;
+	format twoyear      date9.;
+	format threeyear    date9.;
+	format fouryear     date9.;
+    
+        /* Coding in more time variables  */
+        *rxchange: for switching one class from another class;
+            rxchange=min(DiscontDate, enddt,  switchAugmentDate);
+            label rxchange='MIN of DisconDate, End of Continuous Enrollment, SwitchAugmentDate';
+            format rxchange date9.;
+        *end of drug in the drug class; 
+            endofdrug=rxchange+&latency;
+    
+        /* Initial Treatment */
+        if &exposure =0 and switchAugmentDate ne . then do;
+            /* for the individuals who switch from comparator to exposure: */
+            enddate= min(&ibd_def._dt, switchAugmentDate+&induction);
+            IF enddate>(&intime + &induction) and enddate=&ibd_def._dt and &ibd_def ne .    then event=1; else event=0;
+            end;
+        else do;
+            /* For the AT analysis of comparator users who never switched, and for all users of the dpp4 */
+            enddate= min(&ibd_def._dt, enddt, endstudy_dt,&outtime, death_dt, dbexit_dt,  LastColl_Dt);
+            IF enddate>(&intime + &induction) and enddate=&ibd_def._dt and &ibd_def ne .    then event=1; else event=0;
+        end;
+            format enddate date9. ; label enddate ="Date min of (&ibd_def._dt, enddt, endstudy_dt,&outtime, death_dt, dbexit_dt,  LastColl_Dt)";
+            *"Date min of (&ibd_def._dt,death_dt, endstudy_dt, dbexit_dt, LastColl_Dt)";
+            enddatedelete=min( &ibd_def._dt, enddt,endstudy_dt, &outtime);  
+            
+        *Removing individuals who did not reach the induction period for followup ;
+        IF enddatedelete<=(&intime + &induction) then deleteobs=1; 
+            else deleteobs=0;
 
-%LET tablerowvarsi =   age  sex entry_year   bmi_cat2 alcohol_cat smoke_cat hba1c_Cat2  
-nephr_ever nerop_ever dret_ever mi_ever stroke_ever PerArtD_ever /* duration_metformin */ bigua_ever SU_ever TZD_ever insulin_ever /* other oad  */ dpp4i_ever sglt2i_ever prand_ever agluco_ever OAntGLP_ever    /* other */ ass_ever allnsa_ever hrtopp_ever estr_ever gesta_ever pill_ever /* Autoimmune */psorp_ever vasc_ever RhArth_Ever SjSy_Ever sLup_ever /* other drugs */num_nondmdrugs1yr num_nondmdrugs1yr_cat;
+    
+        time=(enddate-(&intime.+&induction)+1)/365.25;
+        time_drugdur=(min(rxchange, enddate)-(indexdate+1))/365.25;    
+    
+        if time>0 then logtime=(log(time/100000))  ;
+        else time=.;
+        label time = "person-years" time_drugdur= "duration of treatment";
+        
+    RUN;
+
+    data dsn; set dsn; if deleteobs=1 then delete; run;
+/* testing with individual observations */
+
+PROC SQL;
+    create table tmp as
+    SELECT id
+    FROM dsn
+    GROUP BY id
+    HAVING COUNT(*) > 1;
+    SELECT count (distinct id) as n FROM tmp;
+QUIT;
+*selecting all of the individuals who contributed twice, first to unexposed person time, then contributed to exposed person time ;
+PROC SQL;
+    create table tmp2 as
+    select a.* from dsn as a 
+    inner join tmp as b on a.id=b.id order by a.id, a.indexdate;
+    select count(distinct id) as n from tmp2;
+QUIT;
+
+PROC FREQ DATA=tmp2;
+TABLES excludeflag_prevalentuser /list missing;
+RUN;
+
+PROC FREQ DATA=dsn; 
+TABLES excludeflag_prevalentuser*dpp4i /list missing;
+RUN;
+/*===================================*\
+//SECTION - Getting median futime, dutime, and counts
+\*===================================*/
+/* median time of followup */
+ods output summary=mediantime;
+proc means data = dsn STACKODS  N NMISS SUM MEAN STD MIN MAX Q1 MEDIAN Q3;
+    where time ne .; 
+    class &exposure;
+    var time ;
+run;
+
+ods output summary=mediantimedu;
+proc means data = dsn STACKODS  N NMISS SUM MEAN STD MIN MAX Q1 MEDIAN Q3;
+    where time ne .; 
+    class &exposure;
+    var  time_drugdur;
+run;
+
+data mediantime(keep=&exposure NMISS Nobs mediantime sum );			
+    set mediantime;
+    mediantime = compress(put((median), 6.2)) || " (" || compress(put((q1), 6.2)) || "-" || compress(put((q3), 6.2)) || ")"; 
+    format sum 8.0;
+run; 
+    
+data mediantimedu(keep=&exposure mediantimedu );			
+    set mediantimedu;
+    mediantimedu = compress(put((median), 6.2)) || " (" || compress(put((q1), 6.2)) || "-" || compress(put((q3), 6.2)) || ")";  
+    format sum 8.0;
+run; 
+
+data mediantimetmp(rename=(sum=time_sum)); 
+    merge mediantime mediantimedu; 
+    by &exposure; 
+run;
+
+/* count numbers of event  */
+ods output summary=event;
+Proc means data=dsn sum stackods ;
+    where time ne .; 
+    class &exposure;
+    var event;
+run;
+
+/* endregion //!SECTION */
+
+/*===================================*\
+//SECTION - Incident Rates Poisson
+\*===================================*/
+proc sort data=dsn; 
+	by &exposure; 
+run;
+
+%LET event = event;
+%LET logtimevar = logtime;
+%LET timevar = time;
+    proc genmod data=dsn;
+    by &exposure;
+    * class id;
+    model &event= /dist=poisson offset=&logtimevar maxiter=100000;
+    * repeated subject=id;
+    estimate 'rate' int 1/exp;
+    ods output estimates=rate;
+    run;
+    Data rate(keep=&exposure rate);
+    set rate;
+    if Label='Exp(rate)';
+    rate=compress(put((LBetaEstimate),6.1))||" ("||compress(put((LBetaLowerCL),6.1))||"-"||compress(put((LBetaUpperCL),6.1))||")";
+    run;
+
+/* endregion //!SECTION */
+
+/*===================================*\
+//SECTION - Calculating Hazard ratios   
+\*===================================*/
+
+*crude HR*;
+ods output ParameterEstimates = crudehr;
+Proc phreg data=dsn covsandwich(aggregate);
+    id id;
+    model &timevar*&event(0)=&exposure /ties=efron rl;
+    title ' crude HR';
+run;
+Data crudehr(keep=&exposure chr clcl cucl crudehr);
+    set crudehr;
+    &exposure=1;
+    chr=exp(Estimate);
+    clcl=exp(Estimate-1.96*StdErr);
+    cucl=exp(Estimate+1.96*StdErr);
+    crudehr=compress(put((hazardratio),6.2))||" ("||compress(put((HRlowerCL),6.2))||"-"||compress(put((HRupperCL),6.2))||")";
+run;
 
 
-%LET interactions =     /* add interaction */ ;
-%LET basevars =  age|age  sex entry_year   bmi_cat2 alcohol_cat smoke_cat hba1c_Cat2  nephr_ever nerop_ever dret_ever mi_ever stroke_ever PerArtD_ever bigua_ever insulin_ever prand_ever agluco_ever OAntGLP_ever ass_ever allnsa_ever hrtopp_ever estr_ever gesta_ever pill_ever psorp_ever vasc_ever RhArth_Ever SjSy_Ever sLup_ever num_nondmdrugs1yr ;
-%let basemodelvars= &basevars. &interactions. ;
-%let tablerowvars= &tablerowvarsi;
+
+*adjusted HR-&weight*;
+%LET weight = smrw;
+ods output ParameterEstimates =&WEIGHT;
+proc phreg data=dsn covsandwich(aggregate);
+    id id;
+    weight &weight; 
+    model  &timevar*&event(0)=&exposure  /ties=efron rl;
+    title 'SMRW adjusted HR';
+run;
+Data &WEIGHT(keep=&exposure whr wlcl wucl &weight.HR);
+    set &WEIGHT;
+    &exposure=1;
+    whr =exp(Estimate);
+    wlcl=exp(Estimate-1.96*StdErr);
+    wucl=exp(Estimate+1.96*StdErr);
+    &weight.hr=compress(put((hazardratio),6.2))||" ("||compress(put((HRlowerCL),6.2))||"-"||compress(put((HRupperCL),6.2))||")";
+run;
+/* endregion //!SECTION */
+/*===================================*\
+//SECTION - output results 
+\*===================================*/
+Data &outdata;
+    length type $ 32 ;
+    length analysis $ 32 ;   
+    merge mediantimetmp   event  (rename=(sum=event_sum)) rate crudehr &weight;
+    by &exposure;
+    analysis="&ana_name. &type. &outdata.";
+    type="&ibd_def.";
+    latency=&latency;
+    induction=&induction;
+run;
+Proc sort data=&outdata; 
+    by descending &exposure; 
+run;
+Data tmpout1
+    (keep=&exposure 
+    Nobs type nmiss
+    mediantime mediantimedu time_sum event_sum rate crudehr &weight.HR analysis induction latency exp unexp);
+    set &outdata;
+    exp="&exposure.";
+    unexp="&comparator.";
+    label event_Sum="No. of Event";
+    label time_Sum = "Person-year";
+run;
+
+Data out_&exposure.v&comparator._&ana_name._&outdata.;
+    retain &exposure Nobs TYPE time_sum event_sum rate crudehr &weight.HR analysis induction latency exp unexp; 
+    set tmpout1;
+        
+    format event_sum best12.;
+    format Nobs COMMA12. event_sum COMMA12. time_sum COMMA12. ;
+run;
+    
+proc print ; 
+run; 
+ /* endregion //!SECTION */
+/*===================================*\
+//SECTION - KM plots 
+\*===================================*/
+/* region */
+
+/* weighted risks    */
+proc phreg data=dsn COVS ;
+    MODEL &timevar*&event(0)= ; 
+    strata &exposure;
+    WEIGHT &weight;
+    ID id ;
+    baseline out=Pred survival=_all_ lower=lower upper=upper;
+    run;
+proc sort data=pred; 
+    by &exposure   &timevar;
+    run;
+Data Pred;
+set Pred(keep=&exposure &timevar survival lower upper);
+risk=1-survival;
+risk_upper=1-lower;
+risk_lower=1-upper;
+run;
+
+data exp(keep=&timevar risk risk_lower risk_upper &exposure.) unexp(keep=&timevar risk risk_lower risk_upper &exposure.);
+set  pred;
+if &exposure=1 then output exp;
+if &exposure=0 then output unexp;
+run;
+Data plot;
+merge exp(rename=(risk=&exposure._risk risk_lower=&exposure._lower risk_upper=&exposure._upper)) unexp(rename=(risk=&comparator._risk risk_lower=&comparator._lower risk_upper=&comparator._upper));
+by &timevar;
+run;
+
+PROC SGPLOT DATA = plot NOAUTOLEGEND DESCRIPTION=""; 
+YAXIS LABEL = 'Risk of Inflammatory Bowel Disease' LABELATTRS=(size=13pt weight=bold)  VALUES = (0 TO 0.0045 BY 0.0005) valueattrs=(size=12pt); 
+XAXIS LABEL = 'Follow-up Time (years)' 		    LABELATTRS=(size=13pt weight=bold)  VALUES = (0 TO 4 BY 0.5) valueattrs=(size=12pt); 
+
+title height=12pt bold " ";
+step x=&timevar y=&exposure._risk/lineattrs=(color=blue pattern=1 thickness=2) name="&exposure.";
+step x=&timevar y=&exposure._lower/lineattrs=(color=blue pattern=20 thickness=1) name="&exposure._lower";
+step x=&timevar y=&exposure._upper/lineattrs=(color=blue pattern=20 thickness=1) name="&exposure._upper";
+
+step x=&timevar y=&comparator._risk/lineattrs=(color=red  pattern=1 thickness=2) name="&comparator.";
+step x=&timevar y=&comparator._lower/lineattrs=(color=red  pattern=20 thickness=1) name="&comparator._lower";
+step x=&timevar y=&comparator._upper/lineattrs=(color=red  pattern=20 thickness=1) name="&comparator._upper";
+keylegend "&exposure." "&comparator." /location=inside position=topleft valueattrs=(size=12pt weight=bold) NOBORDER;
+FOOTNOTE;
+RUN; 
 
 
-*  %let addedmodelvars= &addedDPP4ivSU;
-*  %LET exposure = dpp4i;
-*  %LET comparator = su;
-*  %LET refyear = 2015;
+/*No. of risk at 0 year*/
+%let dataset=dsn;
+proc sql; create table tmpp_b as select "&exposure."    as drug length=12 ,0 as fu_year,  count(id) as total_id, "No. at risk for &comparator initiator at 0 year" as label length=60 from &dataset where &exposure=0; quit;
+proc sql; create table tmpp_a as select "&comparator." as drug length=12,0 as fu_year, count(id) as total_id, "No. at risk for &exposure initiator at 0 year" as label length=60 from &dataset where &exposure=1; quit;
+/*No. of risk at 0.5 year*/
+proc sql; create table tmpp_c as select "&exposure." as drug length=12,0.5 as fu_year,  count(id) as total_id, "No. at risk for &exposure initiator at 0.5 year" as label length=60 from &dataset where &timevar >=0.5 and &exposure=1; quit;
+proc sql; create table tmpp_d as select "&comparator." as drug length=12,0.5 as fu_year, count(id) as total_id, "No. at risk for &comparator initiator at 0.5 year" as label length=60 from &dataset where &timevar >=0.5 and &exposure=0; quit;
+/*No. of risk at 1 year*/
+proc sql; create table tmpp_e as select "&exposure." as drug length=12,1.0 as fu_year,  count(id) as total_id, "No. at risk for &exposure initiator at 1 year" as label length=60 from &dataset where &timevar >=1 and &exposure=1; quit;
+proc sql; create table tmpp_f as select "&comparator." as drug length=12,1.0 as fu_year, count(id) as total_id, "No. at risk for &comparator initiator at 1 year" as label length=60 from &dataset where &timevar >=1 and &exposure=0; quit;
+/*No. of risk at 1.5 year*/
+proc sql; create table tmpp_g as select "&exposure." as drug length=12,1.5 as fu_year,  count(id) as total_id, "No. at risk for &exposure initiator at 1.5 year" as label length=60 from &dataset where &timevar >=1.5 and &exposure=1; quit;
+proc sql; create table tmpp_h as select "&comparator." as drug length=12,1.5 as fu_year, count(id) as total_id, "No. at risk for &comparator initiator at 1.5 year" as label length=60 from &dataset where &timevar >=1.5 and &exposure=0; quit;
+/*No. of risk at 2 year*/
+proc sql; create table tmpp_i as select "&exposure." as drug length=12,2 as fu_year,  count(id) as total_id, "No. at risk for &exposure initiator at 2 year" as label length=60 from &dataset where &timevar >=2 and &exposure=1; quit;
+proc sql; create table tmpp_j as select "&comparator." as drug length=12,2 as fu_year, count(id) as total_id, "No. at risk for &comparator initiator at 2 year" as label length=60 from &dataset where &timevar >=2 and &exposure=0; quit;
+/*No. of risk at 2.5 year*/
+proc sql; create table tmpp_k as select "&exposure." as drug length=12,2.5 as fu_year,  count(id) as total_id, "No. at risk for &exposure initiator at 2.5 year" as label length=60 from &dataset where &timevar >=2.5 and &exposure=1; quit;
+proc sql; create table tmpp_l as select "&comparator." as drug length=12,2.5 as fu_year, count(id) as total_id, "No. at risk for &comparator initiator at 2.5 year" as label length=60 from &dataset where &timevar >=2.5 and &exposure=0; quit;
+/*No. of risk at 3 year*/
+proc sql; create table tmpp_m as select "&exposure." as drug length=12,3 as fu_year,  count(id) as total_id, "No. at risk for &exposure initiator at 3 year" as label length=60 from &dataset where &timevar >=3 and &exposure=1; quit;
+proc sql; create table tmpp_n as select "&comparator." as drug length=12,3 as fu_year, count(id) as total_id, "No. at risk for &comparator initiator at 3 year" as label length=60 from &dataset where &timevar >=3 and &exposure=0; quit;
+/* endregion //!SECTION */
+*gathering all results for print;
+DATA countout;
+SET tmpp_:;
+outcome_def="&ibd_def.";
+RUN;
+proc sort data= countout; by drug; run;
+proc transpose data=countout out=tmp prefix= fuyear; 
+by drug ; 
+id fu_year; run;
+proc print data= tmp  ;  variables drug fuyear:;
+run; 
+%mend analysis;
 
-%LET addedDPP4ivSU = oAntGLP_1yrlookback sglt2i_1yrlookback TZD_1yrlookback;
-%psweighting ( exposure= dpp4i ,
-comparator= SU, 
-weight= smrw, 
-addedmodelvars= &addedDPP4ivSU, 
-basemodelvars= &basevars. &interactions. ,
-tablerowvars= &tablerowvarsi,
-refyear = 2015, 
-save= Y);
+/* endregion //!SECTION */
 
-%LET addedDPP4ivTZD = oAntGLP_1yrlookback sglt2i_1yrlookback su_1yrlookback chf_ever;
-%psweighting(exposure=dpp4i,
-comparator=TZD, 
-weight=smrw,
-addedmodelvars= &addedDPP4ivTZD,
-basemodelvars= &basevars. &interactions,
-tablerowvars=&tablerowvarsi chf_ever,
-refyear=2015,
-save=Y
-);
 
-%LET addedDPP4ivSGLT2i = oAntGLP_1yrlookback su_1yrlookback TZD_1yrlookback;
-%psweighting(exposure=dpp4i,
-comparator=SGLT2i, 
-weight=smrw,
-addedmodelvars=&addedDPP4ivSGLT2i,
-basemodelvars= &basevars. &interactions,
-tablerowvars=&tablerowvarsi,
-refyear=2015,
-save=Y
-);
+
 
 
 %CheckLog( ,ext=LOG,subdir=N,keyword=,exclude=,out=temp.Log_issues,pm=N,sound=N,relog=N,print=Y,to=,cc=,logdef=LOG,dirext=N,shadow=Y,abort=N,test=);
-
-ods _all_ close;
-goptions reset=all;quit;
-*Printing outputs for each ACNU cohort;
-ods excel file="&toutpath./Abrahami_T1_compiled_&todaysdate..xlsx"
-    options (
-        Sheet_interval="NONE"
-        embedded_titles="NO"
-        embedded_footnotes="NO"
-    );
-    *dpp4i vs su;
-ods excel options(sheet_name="DPP4i_SU"  sheet_interval="NOW");
-    proc print data=table1_dpp4ivSU noobs label; var row dpp4i su sdiff su_wgt sdiff_wgt; run;
-ods excel options(sheet_name="DPP4i_SU_plots" sheet_interval="NOW");
-    goptions iback="&foutpath./Abrahami_psplot_dpp4i_SU&todaysdate..png" imagestyle=fit;
-    proc gslide;RUN;quit; goptions reset=all;
-    goptions iback="&foutpath./Abrahami_psplot_trim_dpp4i_SU&todaysdate..png" imagestyle=fit;
-    proc gslide;RUN; quit  ; goptions reset=all;
-    ods text="PS model:  &addedDPP4ivSU.  &basevars. &interactions. ";
-/* ods excel options(sheet_name="DPP4i_SU_flowchart" sheet_interval="NOW");
-    proc print data=temp.exclusions_015_dpp4i_su noobs ; run;
- */
-    *dpp4i vs TZD;
-ods excel options(sheet_name="DPP4i_TZD" sheet_interval="NOW");
-    proc print data=table1_dpp4ivTZD noobs label; var row dpp4i tzd sdiff tzd_wgt sdiff_wgt; run;
-ods excel options(sheet_name="DPP4i_TZD_plots" sheet_interval="NOW");
-    goptions iback="&foutpath./Abrahami_psplot_dpp4i_TZD&todaysdate..png" imagestyle=fit;
-    proc gslide;RUN;quit; goptions reset=all;
-    goptions iback="&foutpath./Abrahami_psplot_trim_dpp4i_TZD&todaysdate..png" imagestyle=fit;
-    proc gslide;RUN; quit; goptions reset=all;
-    ods text="PS model:  &addedDPP4ivTZD.  &basevars. &interactions. ";
-/* ods excel options(sheet_name="DPP4i_TZD_flowchart" sheet_interval="NOW");
-    proc print data=temp.exclusions_015_dpp4i_tzd noobs ; run;
- */
-    *dpp4i vs SGLT2i;
-ods excel options(sheet_name="DPP4i_SGLT2i" sheet_interval="NOW");
-    proc print data=table1_dpp4ivSGLT2i noobs label; var row dpp4i sglt2i sdiff sglt2i_wgt sdiff_wgt; run;
-ods excel options(sheet_name="DPP4i_SGLT2i_plots" sheet_interval="NOW");
-    goptions iback="&foutpath./Abrahami_psplot_dpp4i_SGLT2i&todaysdate..png" imagestyle=fit;
-    proc gslide;RUN;quit;    goptions reset=all;
-    goptions iback="&foutpath./Abrahami_psplot_trim_dpp4i_SGLT2i&todaysdate..png" imagestyle=fit;
-    proc gslide;RUN; quit;    goptions reset=all;
-    ods text="PS model:  &addedDPP4ivSGLT2i.  &basevars. &interactions. ";
-/* ods excel options(sheet_name="DPP4i_SGLT2i_flowchart" sheet_interval="NOW");
-    proc print data=temp.exclusions_015_dpp4i_sglt2i noobs ; run;
- */
-    *log summary;
-ods excel options(sheet_name="Log_issues" sheet_interval="NOW");
-    proc print data=temp.Log_issues noobs ; run;
-ods excel close;
-
-ods _all_ close;
-/* '; * "; */; quit; run;
 
 

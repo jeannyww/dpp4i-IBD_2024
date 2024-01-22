@@ -390,7 +390,7 @@ save=Y
 ods _all_ close;
 goptions reset=all;quit;
 *Printing outputs for each ACNU cohort;
-ods excel file="&toutpath./T1_compiled_&todaysdate..xlsx"
+ods excel file="&toutpath./Main_T1_compiled_&todaysdate..xlsx"
     options (
         Sheet_interval="NONE"
         embedded_titles="NO"

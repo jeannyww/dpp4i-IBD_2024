@@ -58,12 +58,12 @@ option SASAUTOS=(SASAUTOS "D:\Externe Projekte\UNC\wangje\prog\sas\macros");
             long_text="a. Were prevalent users of &exposure. or &comparator. drug", 
             dpp4i_diff= (select count(*) from tmp1 where dpp4i=1 and excludeflag_prevalentuser=1),
             &comparator._diff= (select count(*) from tmp1 where dpp4i=0 and excludeflag_prevalentuser=1);
-            /* initiated comparator drug on the same day */
-            insert into tmp_counts 
-                    set exclusion_num= &num_obs+3 ,
-                        long_text="b. Dual initiator of &exposure. and &comparator.", 
-                        dpp4i_diff= (select count(*) from tmp1 where dpp4i=1 and excludeflag_samedayinitiator=1),
-                        &comparator._diff= (select count(*) from tmp1 where dpp4i=0 and excludeflag_samedayinitiator=1);
+        /* initiated comparator drug on the same day */
+        insert into tmp_counts 
+                set exclusion_num= &num_obs+3 ,
+                long_text="b. Dual initiator of &exposure. and &comparator.", 
+                dpp4i_diff= (select count(*) from tmp1 where dpp4i=1 and excludeflag_samedayinitiator=1),
+                &comparator._diff= (select count(*) from tmp1 where dpp4i=0 and excludeflag_samedayinitiator=1);
         /* filled comparator drug before second prescription */
         insert into tmp_counts 
         set exclusion_num= &num_obs+4 ,
@@ -71,16 +71,16 @@ option SASAUTOS=(SASAUTOS "D:\Externe Projekte\UNC\wangje\prog\sas\macros");
                 dpp4i_diff= (select count(*) from tmp1 where dpp4i=1 and excludeflag_prefill2initiator=1),
                 &comparator._diff= (select count(*) from tmp1 where dpp4i=0 and excludeflag_prefill2initiator=1);
                 /* had no second prescription */
-                insert into tmp_counts 
-                set exclusion_num= &num_obs+5,
-                long_text="d. Had no respecitve second &exposure. or &comparator. prescription", 
-                dpp4i_diff= (select count(*) from tmp1 where dpp4i=1 and filldate2=.),
-                &comparator._diff= (select count(*) from tmp1 where dpp4i=0 and filldate2=.);
+        insert into tmp_counts 
+            set exclusion_num= &num_obs+5,
+            long_text="d. Had no respecitve second &exposure. or &comparator. prescription", 
+            dpp4i_diff= (select count(*) from tmp1 where dpp4i=1 and filldate2=.),
+            &comparator._diff= (select count(*) from tmp1 where dpp4i=0 and filldate2=.);
                 
-                create table tmp2 as select * 
-                from (select * from tmp1 where dpp4i=1 and not (excludeflag_prevalentuser=1 or excludeflag_samedayinitiator=1 or excludeflag_prefill2initiator=1 or filldate2=.)) as a 
-                union all corr
-                select * from (select * from tmp1 where dpp4i=0 and not (excludeflag_prevalentuser=1 or excludeflag_samedayinitiator=1 or excludeflag_prefill2initiator=1 or filldate2=.)) as b; 
+        create table tmp2 as select * 
+        from (select * from tmp1 where dpp4i=1 and not (excludeflag_prevalentuser=1 or excludeflag_samedayinitiator=1 or excludeflag_prefill2initiator=1 or filldate2=.)) as a 
+        union all corr
+        select * from (select * from tmp1 where dpp4i=0 and not (excludeflag_prevalentuser=1 or excludeflag_samedayinitiator=1 or excludeflag_prefill2initiator=1 or filldate2=.)) as b; 
     quit;
     
     PROC SQL NOPRINT; 

@@ -294,9 +294,7 @@ proc print data= temp.exclusions_014_dpp4i_tzd; run;
 ods excel options(sheet_name="dpp4i_sglt2i counts" sheet_interval="NOW");
 proc print data=temp.exclusions_014_dpp4i_sglt2i;
 run;
-
+%CheckLog( ,ext=LOG,subdir=N,keyword=,exclude=,out=temp.Log_issues,pm=N,sound=N,relog=N,print=Y,to=,cc=,logdef=LOG,dirext=N,shadow=Y,abort=N,test=);
 ods excel close;
 
 /* end of program  */
-
-%CheckLog( ,ext=LOG,subdir=N,keyword=,exclude=,out=temp.Log_issues,pm=N,sound=N,relog=N,print=Y,to=,cc=,logdef=LOG,dirext=N,shadow=Y,abort=N,test=);

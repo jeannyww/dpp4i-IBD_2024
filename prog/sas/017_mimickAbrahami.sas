@@ -1,7 +1,7 @@
 /***************************************
 SAS file name: 017_mimickAbrahami.sas
 
-Purpose: To mimic Abrahami et al methods for 2018 dpp4i-IBD paper
+Purpose: To run analysis that mimic Abrahami et al methods for 2018 dpp4i-IBD paper
 Author: JHW
 Creation Date: 2024-01-21
 
@@ -21,53 +21,48 @@ Date: 2024-01-21
 Notes: see git @jeannyww
 ***************************************/
 options nofmterr pageno=1 fullstimer stimer stimefmt=z compress=yes ;
-options macrogen symbolgen mlogic mprint mcompile mcompilenote=all; option MAUTOSOURCE;
+options macrogen nosymbolgen nomlogic nomprint nomcompile ; option MAUTOSOURCE;
 option SASAUTOS=(SASAUTOS "D:\Externe Projekte\UNC\wangje\prog\sas\macros");
 %setup(programName=017_mimickAbrahami.sas, savelog=N, dataset=dataname);
 
-* Loads macros specific to the Analysis a la Abrahami, not to be utilized for main analysis ACNU cohorts;
+* 1. Loads into the work library macros, global variables, specific to the Analysis a la Abrahami, not to be utilized for main analysis ACNU cohorts;
 %include "D:\Externe Projekte\UNC\wangje\prog\sas\017_dependencies.sas";
 
-
 /*===================================*\
-//SECTION - Get cohorts a la Abrahami, adapted from 012_createcohorts.sas
+//SECTION - 2. Get cohorts a la Abrahami, adapted from 012_createcohorts.sas
 \*===================================*/
 
 /* execute the macro */
 %LET exposure = dpp4i;
 %LET comparatorlist = su tzd sglt2i;
-%getCohortAbrahami (exposure=&exposure.,comparatorlist= &comparatorlist.,washoutp= 365, save= Y);
+%getCohort_Ab (exposure=&exposure.,comparatorlist= &comparatorlist.,washoutp= 365, save= Y);
 
 /* endregion //!SECTION */
 
-
-
 /*===================================*\
-//SECTION - Merge cohorts a la Abrahami, adapted from 013_merge.sas
+//SECTION - 3. Merge cohorts a la Abrahami, adapted from 013_merge.sas
 \*===================================*/
 /* region */
 %LET comparatorlist = su tzd sglt2i;
-%mergeall(exposure=dpp4i, comparatorlist=&comparatorlist., primaryGraceP=90, washoutp=365, save=Y);
+%mergeall_Ab(exposure=dpp4i, comparatorlist=&comparatorlist., primaryGraceP=90, washoutp=365, save=Y);
 
 /* endregion //!SECTION */
 
-
 /*===================================*\
-//SECTION - creating analysis dataset a la Abrahami, adapted from 014_createanalysis.sas
+//SECTION - 4. creating analysis dataset a la Abrahami, adapted from 014_createana_Ablysis.sas
 \*===================================*/
 /* region */
 
 /* %LET exposure = dpp4i;
 %LET comparator = sglt2i;
-%createana(exposure=&exposure, comparatorlist=&comparatorlist, save=N); */
+%createana_Ab(exposure=&exposure, comparatorlist=&comparatorlist, save=N); */
 %LET exposure = dpp4i;
 %LET comparatorlist = su tzd sglt2i;
-%createana(exposure=&exposure, comparatorlist=&comparatorlist, save=Y);
+%createana_Ab(exposure=&exposure, comparatorlist=&comparatorlist, save=Y);
 /* endregion //!SECTION */
 
-
 /*===================================*\
-//SECTION - PS weighting adapted from 015_PSweighting.sas
+//SECTION - 5. PS weighting adapted from 015_PSweighting.sas
 Execute Macro PS weighting with Abrahami covariates:
 - Adjusted for age, sex, year of cohort entry, body mass index, alcohol related disorders (including alcoholism, alcoholic cirrhosis of liver, alcoholic hepatitis,
 - and hepatic failure), smoking status, haemoglobin A1c (last lab result b4 cohort entry), 
@@ -91,13 +86,12 @@ Execute Macro PS weighting with Abrahami covariates:
 *  %let tablerowvars= &tablerowvarsi;
 
 %LET tablerowvarsi =   age  sex entry_year   bmi_cat2 alcohol_cat smoke_cat hba1c_Cat2  
-nephr_ever nerop_ever dret_ever mi_ever stroke_ever PerArtD_ever /* duration_metformin */ bigua_ever SU_ever TZD_ever insulin_ever /* other oad  */ dpp4i_ever sglt2i_ever prand_ever agluco_ever OAntGLP_ever    /* other */ ass_ever allnsa_ever hrtopp_ever estr_ever gesta_ever pill_ever /* Autoimmune */psorp_ever vasc_ever RhArth_Ever SjSy_Ever sLup_ever /* other drugs */num_nondmdrugs1yr num_nondmdrugs1yr_cat;
+nephr_ever nerop_ever dret_ever mi_ever stroke_ever PerArtD_ever /* duration_metformin */ bigua_ever SU_ever TZD_ever insulin_ever /* other oad  */ dpp4i_ever sglt2i_ever prand_ever agluco_ever OAntGLP_ever    /* other */ ass_ever allnsa_ever hrtopp_ever estr_ever gesta_ever pill_ever /* Autoimmune */psorp_ever vasc_ever RhArth_Ever SjSy_Ever sLup_ever /* other drugs */num_nondmdrugs1yr num_nondmdrugs1yr_cat crohns_ever ucolitis_ever Icomitis_ever;
 
 
 %LET interactions =     /* add interaction */ ;
 %LET basevars =  age|age  sex entry_year   bmi_cat2 alcohol_cat smoke_cat hba1c_Cat2  nephr_ever nerop_ever dret_ever mi_ever stroke_ever PerArtD_ever bigua_ever insulin_ever prand_ever agluco_ever OAntGLP_ever ass_ever allnsa_ever hrtopp_ever estr_ever gesta_ever pill_ever psorp_ever vasc_ever RhArth_Ever SjSy_Ever sLup_ever num_nondmdrugs1yr ;
 %let basemodelvars= &basevars. &interactions. ;
-%let tablerowvars= &tablerowvarsi;
 
 
 *  %let addedmodelvars= &addedDPP4ivSU;
@@ -106,7 +100,7 @@ nephr_ever nerop_ever dret_ever mi_ever stroke_ever PerArtD_ever /* duration_met
 *  %LET refyear = 2015;
 
 %LET addedDPP4ivSU = oAntGLP_1yrlookback sglt2i_1yrlookback TZD_1yrlookback;
-%psweighting ( exposure= dpp4i ,
+%psweighting_Ab( exposure= dpp4i ,
 comparator= SU, 
 weight= smrw, 
 addedmodelvars= &addedDPP4ivSU, 
@@ -116,7 +110,7 @@ refyear = 2015,
 save= Y);
 
 %LET addedDPP4ivTZD = oAntGLP_1yrlookback sglt2i_1yrlookback su_1yrlookback chf_ever;
-%psweighting(exposure=dpp4i,
+%psweighting_Ab(exposure=dpp4i,
 comparator=TZD, 
 weight=smrw,
 addedmodelvars= &addedDPP4ivTZD,
@@ -127,7 +121,7 @@ save=Y
 );
 
 %LET addedDPP4ivSGLT2i = oAntGLP_1yrlookback su_1yrlookback TZD_1yrlookback;
-%psweighting(exposure=dpp4i,
+%psweighting_Ab(exposure=dpp4i,
 comparator=SGLT2i, 
 weight=smrw,
 addedmodelvars=&addedDPP4ivSGLT2i,
@@ -197,11 +191,11 @@ ods _all_ close;
 /* endregion //!SECTION */
 
 /*===================================*\
-//SECTION - Running the 'Analysis' a la Abrahami, adapted from 016_analysis.sas
+//SECTION - 6. Running the 'Analysis' a la Abrahami, adapted from 016_analysis.sas
 \*===================================*/
 /* region */
 /*---------------------------------------------------------------------
-%analysis(
+%analysis_Ab(
 exposure =  ,   *exposure drug of interest: DPP4i;
 comparator =  , *comparator drug: SU TZD;    
 ana_name =  ,    *name of analysis: main, sensitivity, etc.;
@@ -215,9 +209,9 @@ outtime =  ,      *time which analysis fu ends, ie for AT: '31Dec2017'd, for ITT
  outdata =        *freetext for your chosen name of the outdata results ;
 )
 
-%analysis ( exposure= , comparator=, ana_name=, type=, weight=, induction=, latency=, ibd_def= , intime= , outtime= , outdata= );
+%analysis_Ab ( exposure= , comparator=, ana_name=, type=, weight=, induction=, latency=, ibd_def= , intime= , outtime= , outdata= );
 
-%analysis ( exposure=  
+%analysis_Ab ( exposure=  
 , comparator=
 , ana_name=
 , type=
@@ -230,25 +224,45 @@ outtime =  ,      *time which analysis fu ends, ie for AT: '31Dec2017'd, for ITT
 , outdata= );
 ---------------------------------------------------------------------*/
 
-        ods excel file="&toutpath./Abrahami_TestT2.xlsx"
-        options (
-            Sheet_interval="PROC"
-            embedded_titles="NO"
-            embedded_footnotes="NO"
-        );
-    %analysis ( exposure= dpp4i , comparator= su, ana_name=main, type= IT, weight= smrw, induction= 180, latency= 180 , ibd_def= ibd1, intime= filldate2, outtime='31Dec2022'd , outdata=IT , save=N ) ;
-    %analysis ( exposure= dpp4i , comparator= tzd, ana_name=main, type= IT, weight= smrw, induction= 180, latency= 180 , ibd_def= ibd1, intime= filldate2, outtime='31Dec2022'd , outdata=IT , save=N ) ;
-    %analysis ( exposure= dpp4i , comparator= sglt2i, ana_name=main, type= IT, weight= smrw, induction= 180, latency= 180 , ibd_def= ibd1, intime= filldate2, outtime='31Dec2022'd , outdata=IT , save=N ) ;
-    %analysis ( exposure= dpp4i , comparator= su, ana_name=main, type= AT, weight= smrw, induction= 180, latency= 180 , ibd_def= ibd1, intime= filldate2, outtime='31Dec2022'd , outdata=AT , save=N ) ;
-    %analysis ( exposure= dpp4i , comparator= tzd, ana_name=main, type= AT, weight= smrw, induction= 180, latency= 180 , ibd_def= ibd1, intime= filldate2, outtime='31Dec2022'd , outdata=AT , save=N ) ;
-    %analysis ( exposure= dpp4i , comparator= sglt2i, ana_name=main, type= AT, weight= smrw, induction= 180, latency= 180 , ibd_def= ibd1, intime= filldate2, outtime='31Dec2022'd , outdata=AT , save=N ) ;
+proc template; define style mystyle;
+    parent=styles.sasweb;
+        class graphwalls /frameborder=off;
+        class graphbackground / color=white;
+    end;run;
+ods excel file="&toutpath./Abrahami_T2compiled_&todaysdate..xlsx"
+options (
+    Sheet_interval="NONE"
+    embedded_titles="NO"
+    embedded_footnotes="NO"
+);
+    ods excel options(sheet_name="DPP4i_SU IT" sheet_interval="NOW");
+    %analysis_Ab ( exposure= dpp4i , comparator= su, ana_name=main, type= IT, weight= smrw, induction= 180, latency= 180 , ibd_def= ibd1, intime= filldate2, outtime='31Dec2022'd , outdata=IT , save=N ) ;
+    ods excel options(sheet_name="DPP4i_TZD IT" sheet_interval="NOW");
+    %analysis_Ab ( exposure= dpp4i , comparator= tzd, ana_name=main, type= IT, weight= smrw, induction= 180, latency= 180 , ibd_def= ibd1, intime= filldate2, outtime='31Dec2022'd , outdata=IT , save=N ) ;
+    ods excel options(sheet_name="DPP4i_SGLT2i IT" sheet_interval="NOW");
+    %analysis_Ab ( exposure= dpp4i , comparator= sglt2i, ana_name=main, type= IT, weight= smrw, induction= 180, latency= 180 , ibd_def= ibd1, intime= filldate2, outtime='31Dec2022'd , outdata=IT , save=N ) ;
+    ods excel options(sheet_name="DPP4i_SU AT" sheet_interval="NOW");
+    %analysis_Ab ( exposure= dpp4i , comparator= su, ana_name=main, type= AT, weight= smrw, induction= 180, latency= 180 , ibd_def= ibd1, intime= filldate2, outtime='31Dec2022'd , outdata=AT , save=N ) ;
+    ods excel options(sheet_name="DPP4i_TZD AT" sheet_interval="NOW");
+    %analysis_Ab ( exposure= dpp4i , comparator= tzd, ana_name=main, type= AT, weight= smrw, induction= 180, latency= 180 , ibd_def= ibd1, intime= filldate2, outtime='31Dec2022'd , outdata=AT , save=N ) ;
+    ods excel options(sheet_name="DPP4i_SGLT2i AT" sheet_interval="NOW");
+    %analysis_Ab ( exposure= dpp4i , comparator= sglt2i, ana_name=main, type= AT, weight= smrw, induction= 180, latency= 180 , ibd_def= ibd1, intime= filldate2, outtime='31Dec2022'd , outdata=AT , save=N ) ;
+    ods excel options(sheet_name="Log_issues" sheet_interval="NOW");
+    %CheckLog( ,ext=LOG,subdir=N,keyword=,exclude=,out=temp.Log_issues,pm=N,sound=N,relog=N,print=Y,to=,cc=,logdef=LOG,dirext=N,shadow=Y,abort=N,test=);
+
+    ods excel close; 
 
 
-	
-    
-%CheckLog( ,ext=LOG,subdir=N,keyword=,exclude=,out=temp.Log_issues,pm=N,sound=N,relog=N,print=Y,to=,cc=,logdef=LOG,dirext=N,shadow=Y,abort=N,test=);
+/* endregion //!SECTION */
 
-ods excel close; 
+/*===================================*\
+//SECTION - 6. Running multivariable cox regression a la Abrahami, adapted from 016_analysis.sas
+*TODO - Code in multivariable coxPH to supplement the weighted coxPH.
+adapted from Tian's code in archived_ref: 
+09_anaRUN_MS/MC
+11_sensitivity_coxregression_MS/MC
+\*===================================*/
+/* region */
 
 
 /* endregion //!SECTION */

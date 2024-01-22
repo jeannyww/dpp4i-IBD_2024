@@ -166,6 +166,7 @@ proc sql noprint;
     create table temp.exclusions_016_&exposure._&comparator._&type. as select * from tmp_counts;
     %end;
 quit;
+proc print data= tmp_counts; run;
 data dsn; set dsn; if time eq . then delete; run;
 /* endregion //!SECTION */
 
@@ -314,6 +315,7 @@ Data out_&exposure.v&comparator._&ana_name._&outdata.;
     format event_sum best12.;
     format Nobs COMMA12. event_sum COMMA12. time_sum COMMA12. ;
 run;
+
  /* endregion //!SECTION */
 /*===================================*\
 //SECTION - KM plots 
@@ -399,7 +401,7 @@ id fu_year; run;
 proc print data= tmp  ;  variables drug fuyear:;
 run; 
 
-proc print out_&exposure.v&comparator._&ana_name._&outdata. ; 
+proc print data= out_&exposure.v&comparator._&ana_name._&outdata. ; 
 run; 
 /* endregion //!SECTION */
 %mend analysis;

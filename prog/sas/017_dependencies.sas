@@ -28,7 +28,7 @@ option SASAUTOS=(SASAUTOS "D:\Externe Projekte\UNC\wangje\prog\sas\macros");
 * When using %include, you will load all dependencies specific to the Analysis a la Abrahami, which are not to be generalized or utilized for main analysis ACNU that are true to the correct ACNU methods, so I decided not to include these macros as their own fileexist() in the main SASAUTOS macro library;
 
 /*===================================*\
-//SECTION - ## Get cohorts a la Abrahami, adapted from 012_createcohorts.sas
+//SECTION - ## 2. Get cohorts a la Abrahami, adapted from 012_createcohorts.sas
 \*===================================*/
 /* region */
 
@@ -41,13 +41,14 @@ option SASAUTOS=(SASAUTOS "D:\Externe Projekte\UNC\wangje\prog\sas\macros");
     PROC SQL;
         create table tmp_exclude_&comparator. as
         select distinct a.*,
-        max(a.indexdate-&washoutp. <= b.discontDate and b.indexdate<a.indexdate) as excludeflag_prevalentuser label='EXCLUSION FLAG: prevalent user of &comparator. drug',
+        max(&exposure._1yrlookback/* a.indexdate-&washoutp.<=b.discontDate and b.indexdate<a.indexdate */) as excludeflag_prevalentuser label='EXCLUSION FLAG: prevalent user of &comparator. drug',
         max(a.indexdate=b.indexdate) as excludeflag_samedayinitiator label = 'EXCLUSION FLAG: dual  initiator of &comparator. drug',
         max(a.indexdate<b.indexdate<= a.filldate2) as excludeflag_prefill2initiator label='EXCLUSION FLAG: pre-fill2 dual initiator of comparator drug before second fill date'
         from temp.&comparator._useperiods (where=(newuse=1 and useperiod=1) rename=(reason=reason1)) as a
         left join temp.&exposure._useperiods as b
         on a.id=b.id group by a.id, a.indexdate;
     QUIT;    
+    /* adding back in switch/augmentation future date, which is well past the first useperiod but we will miss subsequent switch/augment dates if the person switched after the 1st use period */
     PROC SQL;
         create table new_abrahami_&comparator. as select distinct a.*, min(b.indexdate) as switchAugmentdate format=date9. label='DATE OF SWITCH/AUGMENTATION' 
         from tmp_exclude_&comparator. as a 
@@ -59,7 +60,7 @@ option SASAUTOS=(SASAUTOS "D:\Externe Projekte\UNC\wangje\prog\sas\macros");
     PROC SQL;
         create table tmp_exclude_&exposure. as 
         select distinct a.*,
-        max(a.indexdate-&washoutp. <= b.discontDate and b.indexdate<a.indexdate) as excludeflag_prevalentuser label='EXCLUSION FLAG: prevalent user of &exposure. drug',
+        max(&comparator._1yrlookback/* a.indexdate-&washoutp.<=b.discontDate and b.indexdate<a.indexdate */) as excludeflag_prevalentuser label='EXCLUSION FLAG: prevalent user of &exposure. drug',
         max(a.indexdate=b.indexdate) as excludeflag_samedayinitiator label = 'EXCLUSION FLAG: dual  initiator of &exposure. drug',
         max(a.indexdate<b.indexdate<= a.filldate2) as excludeflag_prefill2initiator label='EXCLUSION FLAG: pre-fill2 dual initiator of &exposure. drug before second fill date'
         from temp.&exposure._useperiods (where=(newuse=1 and useperiod=1) rename=(reason=reason1)) as a
@@ -116,7 +117,7 @@ run;
 /* endregion //!SECTION */
 
 /*===================================*\
-//SECTION - ## Merge cohorts a la Abrahami, adapted from 013_merge.sas
+//SECTION - ## 3. Merge cohorts a la Abrahami, adapted from 013_merge.sas
 \*===================================*/
 /* region */
 
@@ -348,7 +349,7 @@ QUIT;
 /* endregion //!SECTION */
 
 /*===================================*\
-//SECTION - ## creating analysis dataset a la Abrahami, adapted from 014_createanalysis.sas
+//SECTION - ## 4. creating analysis dataset a la Abrahami, adapted from 014_createanalysis.sas
 \*===================================*/
 /* region */
 
@@ -568,7 +569,7 @@ data tmp2; set tmp2; where delete_IBD ne 1;RUN;
 
 
 /*===================================*\
-//SECTION - ## PS weighting adapted from 015_PSweighting.sas
+//SECTION - ## 5. PS weighting adapted from 015_PSweighting.sas
 \*===================================*/
 /* region */
 %macro psweighting_Ab ( exposure , comparator , weight , addedmodelvars ,basemodelvars , tablerowvars, refyear  , dat, save );
@@ -795,6 +796,20 @@ data tmp2; set tmp2; where delete_IBD ne 1;RUN;
     \*=================*/
     %if &save. = Y %then %do;
         data a.Abrahami_PS_&exposure._&comparator.; set psdsn; run;
+        /* Updating exclusions for PS trimming */
+        PROC SQL; 
+            create table tmp_counts as select * from temp.Abexclusions_014_&exposure._&comparator.;
+            select count(*) into : num_obs from tmp_counts;
+            insert into tmp_counts
+                set exclusion_num=&num_obs+1, 
+                long_text="Number of observations after trimming at 0.05 treated and 0.995 untreated",
+                dpp4i=&&n_&exposure._trim,
+                dpp4i_diff=&&n_&exposure._trim-&&n_&exposure.,
+                &comparator.=&&n_&comparator._trim,
+                &comparator._diff=&&n_&comparator._trim-&&n_&comparator., 
+                full=&&n_&exposure._trim+&&n_&comparator._trim;
+            create table temp.Abexclusions_015_&exposure._&comparator. as select * from tmp_counts;
+        QUIT;
     %end;%else %do; %end;
 
     /*=================*\
@@ -841,7 +856,7 @@ data tmp2; set tmp2; where delete_IBD ne 1;RUN;
 /* endregion //!SECTION */
 
 /*===================================*\
-//SECTION - ## Analysis a la Abrahami, adapted from 016_analysis.sas
+//SECTION - ## 6. Analysis a la Abrahami, adapted from 016_analysis.sas
 \*===================================*/
 /* region */
 
@@ -850,9 +865,8 @@ data tmp2; set tmp2; where delete_IBD ne 1;RUN;
     /*===================================*\
     //SECTION - Setting up data for analysis 
     \*===================================*/
-    /* region */
     
-    data dsn; set a.abrahami_ps_&exposure._&comparator;
+    data dsn; set a.Abrahami_PS_&exposure._&comparator;
         drop Alc_P_bc Alc_P_bl colo_bc colo_bl IBD_P_bc IBD_P_bl DivCol_I_bc DivCol_I_bl DivCol_P_bc DivCol_P_bl PCOS_bc PCOS_bl DiabGest_bc DiabGest_bl IBD_I_bc IBD_I_bl asthma_bc asthma_bl copd_bc copd_bl arrhyth_bc arrhyth_bl chf_bc chf_bl ihd_bc ihd_bl mi_bc mi_bl hyperten_bc hyperten_bl stroke_bc stroke_bl hyperlip_bc hyperlip_bl diab_bc diab_bl dvt_bc dvt_bl pe_bc pe_bl gout_bc 
         gout_bl pthyro_bc pthyro_bl mthyro_bc mthyro_bl depres_bc depres_bl affect_bc affect_bl suic_bc suic_bl sleep_bc sleep_bl schizo_bc schizo_bl epilep_bc epilep_bl renal_bc renal_bl GIulcer_bc GIulcer_bl RhArth_bc RhArth_bl alrhi_bc alrhi_bl glauco_bc glauco_bl migra_bc migra_bl sepsis_bc sepsis_bl pneumo_bc pneumo_bl nephr_bc nephr_bl nerop_bc nerop_bl dret_bc dret_bl psorI_bc psorI_bl psorP_bc psorP_bl vasc_bc vasc_bl SjSy_bc SjSy_bl sLup_bc sLup_bl PerArtD_bc PerArtD_bl AbdPain_bc AbdPain_bl Diarr_bc Diarr_bl BkStool_bc BkStool_bl Crohns_bc 
         Crohns_bl Ucolitis_bc Ucolitis_bl Icomitis_bc Icomitis_bl Gastent_bc Gastent_bl ColIle_bc ColIle_bl Sigmo_bc Sigmo_bl Biops_bc Biops_bl Ileo_bc Ileo_bl HBA1c_bc HBA1c_bl DPP4i_bc DPP4i_gc DPP4i_bl DPP4i_tot1yr SU_bc SU_gc SU_bl SU_tot1yr SGLT2i_bc SGLT2i_gc SGLT2i_bl SGLT2i_tot1yr TZD_bc TZD_gc TZD_bl TZD_tot1yr Insulin_bc Insulin_gc Insulin_bl Insulin_tot1yr bigua_bc bigua_gc bigua_bl bigua_tot1yr prand_bc prand_gc prand_bl prand_tot1yr agluco_bc agluco_gc agluco_bl agluco_tot1yr OAntGLP_bc OAntGLP_gc OAntGLP_bl OAntGLP_tot1yr AminoS_bc 
@@ -885,25 +899,30 @@ data tmp2; set tmp2; where delete_IBD ne 1;RUN;
         *end of drug in the drug class; 
             endofdrug=rxchange+&latency;
     
-        /* Initial Treatment */
+        /* The implementation of 'Initial Treatment' a la Abrahami */
         if &exposure =0 and switchAugmentDate ne . then do;
-            /* for the individuals who switch from comparator to exposure: */
+            /* for the initiators of the comparator who switch from comparator to exposure: */
             enddate= min(&ibd_def._dt, switchAugmentDate+&induction);
             IF enddate>(&intime + &induction) and enddate=&ibd_def._dt and &ibd_def ne .    then event=1; else event=0;
             end;
+        if &exposure =1 and excludeflag_prevalentuser eq 1 then do;
+            /* for dpp4i initiators who were prevalent users of the comparator */
+            enddate= min(&ibd_def._dt, enddt, endstudy_dt,&outtime, death_dt, dbexit_dt,  LastColl_Dt);
+            if enddate>(&intime + &induction) and enddate=&ibd_def._dt and &ibd_def ne .    then event=1; else event=0;
+            end;
         else do;
-            /* For the AT analysis of comparator users who never switched, and for all users of the dpp4 */
+            /* for initiators of either drug who never switched */
             enddate= min(&ibd_def._dt, enddt, endstudy_dt,&outtime, death_dt, dbexit_dt,  LastColl_Dt);
             IF enddate>(&intime + &induction) and enddate=&ibd_def._dt and &ibd_def ne .    then event=1; else event=0;
         end;
-            format enddate date9. ; label enddate ="Date min of (&ibd_def._dt, enddt, endstudy_dt,&outtime, death_dt, dbexit_dt,  LastColl_Dt)";
+        
+            format enddate date9. ; label enddate ="Date min of (&ibd_def._dt, enddt, endstudy_dt,&outtime, death_dt, dbexit_dt,  LastColl_Dt), or switch/augment date for comparators";
             *"Date min of (&ibd_def._dt,death_dt, endstudy_dt, dbexit_dt, LastColl_Dt)";
             enddatedelete=min( &ibd_def._dt, enddt,endstudy_dt, &outtime);  
             
         *Removing individuals who did not reach the induction period for followup ;
         IF enddatedelete<=(&intime + &induction) then deleteobs=1; 
             else deleteobs=0;
-
     
         time=(enddate-(&intime.+&induction)+1)/365.25;
         time_drugdur=(min(rxchange, enddate)-(indexdate+1))/365.25;    
@@ -913,10 +932,42 @@ data tmp2; set tmp2; where delete_IBD ne 1;RUN;
         label time = "person-years" time_drugdur= "duration of treatment";
         
     RUN;
+/*=================*\
+*!SECTION Update counts for exclusion
+\*=================*/
+PROC SQL noprint; 
+    create table tmp_counts as select * from temp.Abexclusions_015_&exposure._&comparator.;
+    select count(*) into : num_obs from tmp_counts;
+    insert into tmp_counts
+        set exclusion_num=&num_obs+1, 
+        long_text="Number of observations after excluding individuals whose &ibd_def._dt or endstudy_dt <= &intime. + &induction.",
+        dpp4i= (select count(*) from dsn where (&exposure=1 and deleteobs=0)),
+        dpp4i_diff= -(select count(*) from dsn where (&exposure=1 and deleteobs=1)),
+        &comparator.=(select count(*) from dsn where (&exposure ne 1 and deleteobs=0)) ,
+        &comparator._diff= -(select count(*) from dsn where (&exposure ne 1 and deleteobs=1)),   
+        full= (select count(*) from dsn where (deleteobs=0));
+    *select * from tmp_counts;
+QUIT;
+data dsn; set dsn; if deleteobs=1 then delete; run;
+proc sql noprint;
+    select count(*) into : num_obs from tmp_counts;
+    insert into tmp_counts
+        set exclusion_num=&num_obs+1, 
+        long_text="Number of individuals with positive, non-zero &type followup time (enddate-(&intime.+&induction)>0)",
+        dpp4i= (select count(*) from dsn where (&exposure=1 and time ne .)),
+        dpp4i_diff= -(select count(*) from dsn where (&exposure=1 and time eq .)),
+        &comparator.=(select count(*) from dsn where (&exposure ne 1 and time ne .)) ,
+        &comparator._diff= -(select count(*) from dsn where (&exposure ne 1 and time eq .)),   
+        full= (select count(*) from dsn where (time ne .));
+    select * from tmp_counts;
+    %if %upcase(&save) eq Y %then %do;
+        create table temp.Abexclusions_016_&exposure._&comparator._&type. as select * from tmp_counts;
+        %end;
+quit;
+proc print data= tmp_counts; run; 
+data dsn; set dsn; if time eq . then delete; run;
 
-    data dsn; set dsn; if deleteobs=1 then delete; run;
-
-PROC SQL;
+PROC SQL noprint;
     create table tmp as
     SELECT id
     FROM dsn
@@ -925,20 +976,27 @@ PROC SQL;
     SELECT count (distinct id) as n FROM tmp;
 QUIT;
 *selecting all of the individuals who contributed twice, first to unexposed person time, then contributed to exposed person time ;
-PROC SQL;
+PROC SQL noprint;
     create table tmp2 as
     select a.* from dsn as a 
     inner join tmp as b on a.id=b.id order by a.id, a.indexdate;
     select count(distinct id) as n from tmp2;
 QUIT;
-
+title "Individuals who contributed twice, first to unexposed person time, then contributed to exposed person time";
 PROC FREQ DATA=tmp2;
 TABLES excludeflag_prevalentuser /list missing;
 RUN;
+proc means data=dsn 
+    STACKODS N NMISS MEAN STD MIN MAX Q1 MEDIAN Q3   ;
+    where time ne .; 
+    class &exposure excludeflag_prevalentuser;    
+    var  time time_drugdur ; 
+run;
 
 PROC FREQ DATA=dsn; 
-TABLES excludeflag_prevalentuser*dpp4i /list missing;
+TABLES dpp4i*excludeflag_prevalentuser*event /list missing;
 RUN;
+title; 
 /*===================================*\
 //SECTION - Getting median futime, dutime, and counts
 \*===================================*/
@@ -982,7 +1040,6 @@ Proc means data=dsn sum stackods ;
     var event;
 run;
 
-/* endregion //!SECTION */
 
     /*===================================*\
     //SECTION - Incident Rates Poisson
@@ -1008,7 +1065,7 @@ run;
         rate=compress(put((LBetaEstimate),6.1))||" ("||compress(put((LBetaLowerCL),6.1))||"-"||compress(put((LBetaUpperCL),6.1))||")";
         run;
 
-    /* endregion //!SECTION */
+
 
     /*===================================*\
     //SECTION - Calculating Hazard ratios   
@@ -1049,7 +1106,7 @@ run;
         wucl=exp(Estimate+1.96*StdErr);
         &weight.hr=compress(put((hazardratio),6.2))||" ("||compress(put((HRlowerCL),6.2))||"-"||compress(put((HRupperCL),6.2))||")";
     run;
-    /* endregion //!SECTION */
+
     /*===================================*\
     //SECTION - output results 
     \*===================================*/
@@ -1087,12 +1144,12 @@ run;
         
     proc print ; 
     run; 
-    /* endregion //!SECTION */
+
     /*===================================*\
     //SECTION - KM plots 
     \*===================================*/
     /* region */
-
+    ods excel options(sheet_interval="NOW");
     /* weighted risks    */
     proc phreg data=dsn COVS ;
         MODEL &timevar*&event(0)= ; 
@@ -1140,26 +1197,26 @@ run;
 
     /*No. of risk at 0 year*/
     %let dataset=dsn;
-    proc sql; create table tmpp_b as select "&exposure."    as drug length=12 ,0 as fu_year,  count(id) as total_id, "No. at risk for &comparator initiator at 0 year" as label length=60 from &dataset where &exposure=0; quit;
-    proc sql; create table tmpp_a as select "&comparator." as drug length=12,0 as fu_year, count(id) as total_id, "No. at risk for &exposure initiator at 0 year" as label length=60 from &dataset where &exposure=1; quit;
+    proc sql noprint; create table tmpp_b as select "&exposure."    as drug length=12 ,0 as fu_year,  count(id) as total_id, "No. at risk for &comparator initiator at 0 year" as label length=60 from &dataset where &exposure=0; quit;
+    proc sql noprint; create table tmpp_a as select "&comparator." as drug length=12,0 as fu_year, count(id) as total_id, "No. at risk for &exposure initiator at 0 year" as label length=60 from &dataset where &exposure=1; quit;
     /*No. of risk at 0.5 year*/
-    proc sql; create table tmpp_c as select "&exposure." as drug length=12,0.5 as fu_year,  count(id) as total_id, "No. at risk for &exposure initiator at 0.5 year" as label length=60 from &dataset where &timevar >=0.5 and &exposure=1; quit;
-    proc sql; create table tmpp_d as select "&comparator." as drug length=12,0.5 as fu_year, count(id) as total_id, "No. at risk for &comparator initiator at 0.5 year" as label length=60 from &dataset where &timevar >=0.5 and &exposure=0; quit;
+    proc sql noprint; create table tmpp_c as select "&exposure." as drug length=12,0.5 as fu_year,  count(id) as total_id, "No. at risk for &exposure initiator at 0.5 year" as label length=60 from &dataset where &timevar >=0.5 and &exposure=1; quit;
+    proc sql noprint; create table tmpp_d as select "&comparator." as drug length=12,0.5 as fu_year, count(id) as total_id, "No. at risk for &comparator initiator at 0.5 year" as label length=60 from &dataset where &timevar >=0.5 and &exposure=0; quit;
     /*No. of risk at 1 year*/
-    proc sql; create table tmpp_e as select "&exposure." as drug length=12,1.0 as fu_year,  count(id) as total_id, "No. at risk for &exposure initiator at 1 year" as label length=60 from &dataset where &timevar >=1 and &exposure=1; quit;
-    proc sql; create table tmpp_f as select "&comparator." as drug length=12,1.0 as fu_year, count(id) as total_id, "No. at risk for &comparator initiator at 1 year" as label length=60 from &dataset where &timevar >=1 and &exposure=0; quit;
+    proc sql noprint; create table tmpp_e as select "&exposure." as drug length=12,1.0 as fu_year,  count(id) as total_id, "No. at risk for &exposure initiator at 1 year" as label length=60 from &dataset where &timevar >=1 and &exposure=1; quit;
+    proc sql noprint; create table tmpp_f as select "&comparator." as drug length=12,1.0 as fu_year, count(id) as total_id, "No. at risk for &comparator initiator at 1 year" as label length=60 from &dataset where &timevar >=1 and &exposure=0; quit;
     /*No. of risk at 1.5 year*/
-    proc sql; create table tmpp_g as select "&exposure." as drug length=12,1.5 as fu_year,  count(id) as total_id, "No. at risk for &exposure initiator at 1.5 year" as label length=60 from &dataset where &timevar >=1.5 and &exposure=1; quit;
-    proc sql; create table tmpp_h as select "&comparator." as drug length=12,1.5 as fu_year, count(id) as total_id, "No. at risk for &comparator initiator at 1.5 year" as label length=60 from &dataset where &timevar >=1.5 and &exposure=0; quit;
+    proc sql noprint; create table tmpp_g as select "&exposure." as drug length=12,1.5 as fu_year,  count(id) as total_id, "No. at risk for &exposure initiator at 1.5 year" as label length=60 from &dataset where &timevar >=1.5 and &exposure=1; quit;
+    proc sql noprint; create table tmpp_h as select "&comparator." as drug length=12,1.5 as fu_year, count(id) as total_id, "No. at risk for &comparator initiator at 1.5 year" as label length=60 from &dataset where &timevar >=1.5 and &exposure=0; quit;
     /*No. of risk at 2 year*/
-    proc sql; create table tmpp_i as select "&exposure." as drug length=12,2 as fu_year,  count(id) as total_id, "No. at risk for &exposure initiator at 2 year" as label length=60 from &dataset where &timevar >=2 and &exposure=1; quit;
-    proc sql; create table tmpp_j as select "&comparator." as drug length=12,2 as fu_year, count(id) as total_id, "No. at risk for &comparator initiator at 2 year" as label length=60 from &dataset where &timevar >=2 and &exposure=0; quit;
+    proc sql noprint; create table tmpp_i as select "&exposure." as drug length=12,2 as fu_year,  count(id) as total_id, "No. at risk for &exposure initiator at 2 year" as label length=60 from &dataset where &timevar >=2 and &exposure=1; quit;
+    proc sql noprint; create table tmpp_j as select "&comparator." as drug length=12,2 as fu_year, count(id) as total_id, "No. at risk for &comparator initiator at 2 year" as label length=60 from &dataset where &timevar >=2 and &exposure=0; quit;
     /*No. of risk at 2.5 year*/
-    proc sql; create table tmpp_k as select "&exposure." as drug length=12,2.5 as fu_year,  count(id) as total_id, "No. at risk for &exposure initiator at 2.5 year" as label length=60 from &dataset where &timevar >=2.5 and &exposure=1; quit;
-    proc sql; create table tmpp_l as select "&comparator." as drug length=12,2.5 as fu_year, count(id) as total_id, "No. at risk for &comparator initiator at 2.5 year" as label length=60 from &dataset where &timevar >=2.5 and &exposure=0; quit;
+    proc sql noprint; create table tmpp_k as select "&exposure." as drug length=12,2.5 as fu_year,  count(id) as total_id, "No. at risk for &exposure initiator at 2.5 year" as label length=60 from &dataset where &timevar >=2.5 and &exposure=1; quit;
+    proc sql noprint; create table tmpp_l as select "&comparator." as drug length=12,2.5 as fu_year, count(id) as total_id, "No. at risk for &comparator initiator at 2.5 year" as label length=60 from &dataset where &timevar >=2.5 and &exposure=0; quit;
     /*No. of risk at 3 year*/
-    proc sql; create table tmpp_m as select "&exposure." as drug length=12,3 as fu_year,  count(id) as total_id, "No. at risk for &exposure initiator at 3 year" as label length=60 from &dataset where &timevar >=3 and &exposure=1; quit;
-    proc sql; create table tmpp_n as select "&comparator." as drug length=12,3 as fu_year, count(id) as total_id, "No. at risk for &comparator initiator at 3 year" as label length=60 from &dataset where &timevar >=3 and &exposure=0; quit;
+    proc sql noprint; create table tmpp_m as select "&exposure." as drug length=12,3 as fu_year,  count(id) as total_id, "No. at risk for &exposure initiator at 3 year" as label length=60 from &dataset where &timevar >=3 and &exposure=1; quit;
+    proc sql noprint; create table tmpp_n as select "&comparator." as drug length=12,3 as fu_year, count(id) as total_id, "No. at risk for &comparator initiator at 3 year" as label length=60 from &dataset where &timevar >=3 and &exposure=0; quit;
     /* endregion //!SECTION */
     *gathering all results for print;
     DATA countout;
@@ -1172,15 +1229,16 @@ run;
     id fu_year; run;
     proc print data= tmp  ;  variables drug fuyear:;
     run; 
+proc print data= out_&exposure.v&comparator._&ana_name._&outdata. ; 
+run; 
+
 %mend analysis_Ab;
-
-    /* endregion //!SECTION */
-
 
 /* endregion //!SECTION */
 
 /*===================================*\
 //SECTION - ## Multivariable Cox model by Abrahami standards 
+* TODO - later
 \*===================================*/
 /* region */
 

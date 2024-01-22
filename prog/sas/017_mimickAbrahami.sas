@@ -21,12 +21,12 @@ Date: 2024-01-21
 Notes: see git @jeannyww
 ***************************************/
 options nofmterr pageno=1 fullstimer stimer stimefmt=z compress=yes ;
-options macrogen nosymbolgen nomlogic nomprint nomcompile ; option MAUTOSOURCE;
+options macrogen  nomlogic nomprint  ; option MAUTOSOURCE;
 option SASAUTOS=(SASAUTOS "D:\Externe Projekte\UNC\wangje\prog\sas\macros");
 %setup(programName=017_mimickAbrahami.sas, savelog=N, dataset=dataname);
 
 * 1. Loads into the work library macros, global variables, specific to the Analysis a la Abrahami, not to be utilized for main analysis ACNU cohorts;
-%include "D:\Externe Projekte\UNC\wangje\prog\sas\017_dependencies.sas";
+%include "D:\Externe Projekte\UNC\wangje\prog\sas\17_dependencies.sas";
 
 /*===================================*\
 //SECTION - 2. Get cohorts a la Abrahami, adapted from 012_createcohorts.sas
@@ -191,7 +191,7 @@ ods _all_ close;
 /* endregion //!SECTION */
 
 /*===================================*\
-//SECTION - 6. Running the 'Analysis' a la Abrahami, adapted from 016_analysis.sas
+//SECTION - 6. Running the 'IT Analysis' a la Abrahami, adapted from 016_analysis.sas
 \*===================================*/
 /* region */
 /*---------------------------------------------------------------------
@@ -224,11 +224,6 @@ outtime =  ,      *time which analysis fu ends, ie for AT: '31Dec2017'd, for ITT
 , outdata= );
 ---------------------------------------------------------------------*/
 
-proc template; define style mystyle;
-    parent=styles.sasweb;
-        class graphwalls /frameborder=off;
-        class graphbackground / color=white;
-    end;run;
 ods excel file="&toutpath./Abrahami_T2compiled_&todaysdate..xlsx"
 options (
     Sheet_interval="NONE"
@@ -237,16 +232,13 @@ options (
 );
     ods excel options(sheet_name="DPP4i_SU IT" sheet_interval="NOW");
     %analysis_Ab ( exposure= dpp4i , comparator= su, ana_name=main, type= IT, weight= smrw, induction= 180, latency= 180 , ibd_def= ibd1, intime= filldate2, outtime='31Dec2022'd , outdata=IT , save=N ) ;
+    
     ods excel options(sheet_name="DPP4i_TZD IT" sheet_interval="NOW");
     %analysis_Ab ( exposure= dpp4i , comparator= tzd, ana_name=main, type= IT, weight= smrw, induction= 180, latency= 180 , ibd_def= ibd1, intime= filldate2, outtime='31Dec2022'd , outdata=IT , save=N ) ;
+        
     ods excel options(sheet_name="DPP4i_SGLT2i IT" sheet_interval="NOW");
     %analysis_Ab ( exposure= dpp4i , comparator= sglt2i, ana_name=main, type= IT, weight= smrw, induction= 180, latency= 180 , ibd_def= ibd1, intime= filldate2, outtime='31Dec2022'd , outdata=IT , save=N ) ;
-    ods excel options(sheet_name="DPP4i_SU AT" sheet_interval="NOW");
-    %analysis_Ab ( exposure= dpp4i , comparator= su, ana_name=main, type= AT, weight= smrw, induction= 180, latency= 180 , ibd_def= ibd1, intime= filldate2, outtime='31Dec2022'd , outdata=AT , save=N ) ;
-    ods excel options(sheet_name="DPP4i_TZD AT" sheet_interval="NOW");
-    %analysis_Ab ( exposure= dpp4i , comparator= tzd, ana_name=main, type= AT, weight= smrw, induction= 180, latency= 180 , ibd_def= ibd1, intime= filldate2, outtime='31Dec2022'd , outdata=AT , save=N ) ;
-    ods excel options(sheet_name="DPP4i_SGLT2i AT" sheet_interval="NOW");
-    %analysis_Ab ( exposure= dpp4i , comparator= sglt2i, ana_name=main, type= AT, weight= smrw, induction= 180, latency= 180 , ibd_def= ibd1, intime= filldate2, outtime='31Dec2022'd , outdata=AT , save=N ) ;
+    
     ods excel options(sheet_name="Log_issues" sheet_interval="NOW");
     %CheckLog( ,ext=LOG,subdir=N,keyword=,exclude=,out=temp.Log_issues,pm=N,sound=N,relog=N,print=Y,to=,cc=,logdef=LOG,dirext=N,shadow=Y,abort=N,test=);
 

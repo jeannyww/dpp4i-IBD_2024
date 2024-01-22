@@ -270,6 +270,10 @@ proc print data=temp.exclusions_012_&exposure._&comparator.; run;
         *  label duration_metformin="Proxy for duration of treated DM: Days between first date of metformin rx and (excl) cohort entry date";
         /* formats and labels  */    
         format sex $sexf. alcohol_cat $statusf. smoke $statusf. hba1c_cat  hba1cf. bmi_cat bmif.;
+        /* 2024-01-22 identified bug where prevalent users were actually included. this is wrong and is fixed by overwriting the excludeflag_prevalentuser */
+        if &exposure. eq 1 then excludeflag_prevalentuser =max(&comparator._tot1yr ne . and &comparator._tot1yr>0);
+        if &exposure. eq 0 then excludeflag_prevalentuser =max(&exposure._tot1yr ne . and &exposure._tot1yr>0);
+        label excludeflag_prevalentuser ='EXCLUSION FLAG: prevalent user of comparator drug';
     run;
     /* If save=y then save to temp library for retreival later  */
     %if &save=Y %then %do; 

@@ -271,8 +271,12 @@ proc print data=temp.exclusions_012_&exposure._&comparator.; run;
         /* formats and labels  */    
         format sex $sexf. alcohol_cat $statusf. smoke $statusf. hba1c_cat  hba1cf. bmi_cat bmif.;
         /* *NOTE - 2024-01-22 identified bug where prevalent users were actually included. this is wrong and is fixed by overwriting the excludeflag_prevalentuser */
-        if &exposure. eq 1 then excludeflag_prevalentuser =max(&comparator._tot1yr ne . and &comparator._tot1yr>0);
-        if &exposure. eq 0 then excludeflag_prevalentuser =max(&exposure._tot1yr ne . and &exposure._tot1yr>0);
+
+        if &exposure. eq 1 then excludeflag_prevalentuser =max(&comparator._ever); 
+        if &exposure. eq 0 then excludeflag_prevalentuser =max(&exposure._ever);
+        *if &exposure. eq 1 excludeflag_prevalentuser =max(&comparator._tot1yr ne . and &comparator._tot1yr>0); 
+        *if &exposure. eq 0 then excludeflag_prevalentuser =max(&exposure._tot1yr ne . and &exposure._tot1yr>0);
+
         label excludeflag_prevalentuser ='EXCLUSION FLAG: prevalent user of comparator drug';
     run;
     /* If save=y then save to temp library for retreival later  */

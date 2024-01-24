@@ -50,7 +50,9 @@ option SASAUTOS=(SASAUTOS "D:\Externe Projekte\UNC\wangje\prog\sas\macros");
     QUIT;    
     /* adding back in switch/augmentation future date, which is well past the first useperiod but we will miss subsequent switch/augment dates if the person switched after the 1st use period */
     PROC SQL;
-        create table new_abrahami_&comparator. as select distinct a.*, min(b.indexdate) as switchAugmentdate format=date9. label='DATE OF SWITCH/AUGMENTATION' 
+        create table new_abrahami_&comparator. as select distinct a.*, 
+        min(b.indexdate) as switchAugmentdate format=date9. label='DATE OF SWITCH/AUGMENTATION',
+        b.filldate2 as dpp4i_filldate2 format=date9. label='DATE OF SECOND FILL OF &exposure. DRUG for switch/augmentation'
         from tmp_exclude_&comparator. as a 
         LEFT JOIN temp.&exposure._useperiods as b on a.id=b.id and a.indexdate<=b.indexdate /* <=a.discontDate */
         group by a.id, a.indexdate
@@ -79,7 +81,7 @@ option SASAUTOS=(SASAUTOS "D:\Externe Projekte\UNC\wangje\prog\sas\macros");
 
     /* Combining 'new use' of comparator and 'time-varying' abrahami exposure */
     data Abrahami_&exposure._&comparator. (sortedby=id indexdate);
-    retain id startdt enddt useperiod indexdate filldate2  switchAugmentdate discontDate newuse su dpp4i excludeflag_prevalentuser excludeflag_prefill2initiator  excludeflag_samedayinitiator reason1;
+    retain id startdt enddt useperiod indexdate filldate2  switchAugmentdate dpp4i_filldate2 discontDate newuse su dpp4i excludeflag_prevalentuser excludeflag_prefill2initiator  excludeflag_samedayinitiator reason1;
     set new_abrahami_&exposure.  (in=a)  new_abrahami_&comparator.  (in=b);
     by id indexdate;
     &exposure.=a; 
@@ -907,20 +909,30 @@ data tmp2; set tmp2; where delete_IBD ne 1;RUN;
             endofdrug=rxchange+&latency;
     
         /* The implementation of 'Initial Treatment' a la Abrahami */
-        if &exposure =0 and switchAugmentDate ne . then do;
-            /* for the initiators of the comparator who switch from comparator to exposure: */
-            enddate= min(&ibd_def._dt, switchAugmentDate+&induction);
-            IF enddate>(&intime + &induction) and enddate=&ibd_def._dt and &ibd_def ne .    then event=1; else event=0;
-            end;
+        /* for the initiators of the comparator who switch from comparator to exposure: */
+        *if the startdate is filldate2, the date of second prescription;
+        %if %upcase(&intime) eq FILLDATE2 %then %do;
+            if &exposure =0 and switchAugmentDate ne . then do;
+                enddate= min(&ibd_def._dt, dpp4i_filldate2 +&induction);
+                IF enddate>(&intime + &induction) and enddate=&ibd_def._dt and &ibd_def ne .    then event=1; else event=0;
+                end;
+            %end;
+        *if the startdate is time0, ie the date of first presription;
+        %else %if %upcase(&intime) ne FILLDATE2 %then %do;
+            if &exposure =0 and switchAugmentDate ne . then do;
+                enddate= min(&ibd_def._dt, switchAugmentDate+&induction);
+                IF enddate>(&intime + &induction) and enddate=&ibd_def._dt and &ibd_def ne .    then event=1; else event=0;
+                end;
+            %end;
+        /* for dpp4i initiators who were prevalent users of the comparator */
         if &exposure =1 and excludeflag_prevalentuser eq 1 then do;
-            /* for dpp4i initiators who were prevalent users of the comparator */
             enddate= min(&ibd_def._dt, enddt, endstudy_dt,&outtime, death_dt, dbexit_dt,  LastColl_Dt);
-            if enddate>(&intime + &induction) and enddate=&ibd_def._dt and &ibd_def ne .    then event=1; else event=0;
+            if enddate>(&intime + &induction) and enddate=&ibd_def._dt and &ibd_def ne . then event=1; else event=0;
             end;
         else do;
             /* for initiators of either drug who never switched */
             enddate= min(&ibd_def._dt, enddt, endstudy_dt,&outtime, death_dt, dbexit_dt,  LastColl_Dt);
-            IF enddate>(&intime + &induction) and enddate=&ibd_def._dt and &ibd_def ne .    then event=1; else event=0;
+            IF enddate>(&intime + &induction) and enddate=&ibd_def._dt and &ibd_def ne . then event=1; else event=0;
         end;
         
             format enddate date9. ; label enddate ="Date min of (&ibd_def._dt, enddt, endstudy_dt,&outtime, death_dt, dbexit_dt,  LastColl_Dt), or switch/augment date for comparators";

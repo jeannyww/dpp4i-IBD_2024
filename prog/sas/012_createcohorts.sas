@@ -72,6 +72,7 @@ data temp.exclusions_dpp4i_sglt2i; set temp.exclusions_box0_all; keep exclusion_
         order by a.id, a.indexdate;
     QUIT;
     
+    
 %mend newuse;
 
 /*getCohort*/

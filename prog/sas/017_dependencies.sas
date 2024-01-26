@@ -279,7 +279,7 @@ QUIT;
     label hba1ctime="HBA1c level/time (number of days between the last recording before the time0 and the time0)";
     label hba1cno="Number of HBA1c recordings within the last three years prior to the time0";
     label hba1cavg="Average HBA1c level within the last three years before the time0";
-    label history="Number of days of recorded history in the database prior to the time0 (the number of days between the first prescription in the patients’ profile and the time0, historical entries prior 1987 are ignored).";
+    label history="Number of days of recorded history in the database prior to the time0 (the number of days between the first prescription in the patients profile and the time0, historical entries prior 1987 are ignored).";
     label GPyearDx="Practice visits last year based on diagnoses = number of practice visits in the 365 days immediately prior to the time0 (count only visits at separate dates)";
     label GPyearDxRx="Practice visits last year based on diagnoses and prescriptions = number of practice visits in the 365 days immediately prior to the time0 (count only visits at separate dates)";
     /* Baseline vars- crude  */
@@ -521,10 +521,10 @@ data tmp2; set tmp2; where delete_IBD ne 1;RUN;
         insert into tmp_counts 
         set exclusion_num= &num_obs+1 ,
         long_text="Initiators with colectomy, colostomy, or ileostomy before the first prescription were excluded",
-        dpp4i= (select count(*) from tmp2 where dpp4i=1 and delete_colile ne 1 and not (colile_bl not in (., 0) )), 
-        dpp4i_diff= -(select count(*) from tmp2 where dpp4i=1 and delete_colile eq 1  and (colile_bl not in (., 0) )),
-        &comparator= (select count(*) from tmp2 where dpp4i=0 and delete_colile ne 1  and not (colile_bl not in (., 0) )),
-        &comparator._diff= -(select count(*) from tmp2 where dpp4i=0 and delete_colile eq 1  and (colile_bl not in (., 0) ));
+        dpp4i= (select count(*) from tmp2 where dpp4i=1 and delete_colile ne 1 ), 
+        dpp4i_diff= -(select count(*) from tmp2 where dpp4i=1 and delete_colile eq 1),
+        &comparator= (select count(*) from tmp2 where dpp4i=0 and delete_colile ne 1 ),
+        &comparator._diff= -(select count(*) from tmp2 where dpp4i=0 and delete_colile eq 1);
     QUIT;
     data tmp3; set tmp2; where  delete_colile ne 1; RUN;
 
@@ -555,6 +555,15 @@ data tmp2; set tmp2; where delete_IBD ne 1;RUN;
             &comparator._diff= -(select count(*) from tmp3 where dpp4i=0 and chf_bl not in (., 0));
         QUIT;
     %end;  
+    /* Check that the exclusion numbers match  */
+    proc sql NOPRINT;
+        insert into tmp_counts set
+        long_text="Check: numrows of tmpana_&exposure._&comparator. = numrows of tmp_counts",
+        full= (select count(*) from tmpana_&exposure._&comparator.);
+        quit;
+    proc print data=tmp_counts; run;
+
+    /* add a column of totals for full */
     data tmp_counts;
         set tmp_counts;
         if full eq . then do;
@@ -835,6 +844,8 @@ data tmp2; set tmp2; where delete_IBD ne 1;RUN;
     %LET outname = Table1_&exposure._&comparator._&todaysdate.; 
     options orientation=landscape nodate nonumber nocenter;
     %table1(inds= &ds, colVar= &colVar, rowVars= &rowVars, wgtVar= , maxLevels=16, outfile=&outname, title=&outname, cellsize=5);
+
+    
     title ;
     data tab1_unwgt_&exposure.; 
         set final; run;

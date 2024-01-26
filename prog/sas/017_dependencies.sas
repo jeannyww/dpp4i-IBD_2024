@@ -51,13 +51,19 @@ option SASAUTOS=(SASAUTOS "D:\Externe Projekte\UNC\wangje\prog\sas\macros");
     QUIT;    
     /* adding back in switch/augmentation future date, which is well past the first useperiod but we will miss subsequent switch/augment dates if the person switched after the 1st use period */
     PROC SQL;
-        create table new_abrahami_&comparator. as select distinct a.*, 
-        min(b.indexdate) as switchAugmentdate format=date9. label='DATE OF SWITCH/AUGMENTATION',
-        b.filldate2 as dpp4i_filldate2 format=date9. label='DATE OF SECOND FILL OF &exposure. DRUG for switch/augmentation'
+        create table _new_abrahami_&comparator. as select distinct a.*, 
+        min(b.indexdate) as switchAugmentdate format=date9. label='DATE OF SWITCH/AUGMENTATION'
         from tmp_exclude_&comparator. as a 
         LEFT JOIN temp.&exposure._useperiods as b on a.id=b.id and a.indexdate<=b.indexdate /* <=a.discontDate */
         group by a.id, a.indexdate
         order by a.id, a.indexdate;
+    QUIT;
+    PROC SQL;
+        create table new_abrahami_&comparator. as select distinct a.*,
+        min(b.filldate2) as dpp4i_filldate2 format=date9. label='DATE OF SECOND FILL OF &exposure. DRUG for switch/augmentation'
+        from _new_abrahami_&comparator. as a
+        LEFT JOIN temp.&exposure._useperiods as b on a.id=b.id and a.switchAugmentdate<=b.filldate2 /* <=a.discontDate */
+                order by a.id, a.indexdate;
     QUIT;
     /*  creating the exposure group a la Abrahami */
     PROC SQL;
@@ -1067,7 +1073,13 @@ Proc means data=dsn sum stackods ;
     class &exposure;
     var event;
 run;
+/* count numbers of switchers */
 
+/* count numbers of switchers with a history of IBD */
+
+/* count number of switchers who had a subsequent diagnosis of IBD */
+
+/* above outputs will be stored in work lib and merged in //Section- Output Results */
 
     /*===================================*\
     //SECTION - Incident Rates Poisson
@@ -1161,7 +1173,7 @@ run;
         label event_Sum="No. of Event";
         label time_Sum = "Person-year";
     run;
-
+/* Compilation of counts, persontime, incidence rates, unweighted and SMR-weighted HRs */
     Data out_&exposure.v&comparator._&ana_name._&outdata.;
         retain &exposure Nobs TYPE time_sum event_sum rate crudehr &weight.HR analysis induction latency exp unexp; 
         set tmpout1;
@@ -1169,15 +1181,11 @@ run;
         format event_sum best12.;
         format Nobs COMMA12. event_sum COMMA12. time_sum COMMA12. ;
     run;
-        
-    proc print ; 
-    run; 
 
     /*===================================*\
     //SECTION - KM plots 
     \*===================================*/
     /* region */
-    ods excel options(sheet_interval="NOW");
     /* weighted risks    */
     proc phreg data=dsn COVS ;
         MODEL &timevar*&event(0)= ; 
@@ -1205,7 +1213,8 @@ run;
     merge exp(rename=(risk=&exposure._risk risk_lower=&exposure._lower risk_upper=&exposure._upper)) unexp(rename=(risk=&comparator._risk risk_lower=&comparator._lower risk_upper=&comparator._upper));
     by &timevar;
     run;
-
+/* Trigger ods excel to create a new sheet for the plots and main results */
+ods excel options(sheet_interval="NOW");
     PROC SGPLOT DATA = plot NOAUTOLEGEND DESCRIPTION=""; 
     YAXIS LABEL = 'Risk of Inflammatory Bowel Disease' LABELATTRS=(size=13pt weight=bold)  VALUES = (0 TO 0.0045 BY 0.0005) valueattrs=(size=12pt); 
     XAXIS LABEL = 'Follow-up Time (years)' 		    LABELATTRS=(size=13pt weight=bold)  VALUES = (0 TO 4 BY 0.5) valueattrs=(size=12pt); 
@@ -1257,9 +1266,9 @@ run;
     id fu_year; run;
     proc print data= tmp  ;  variables drug fuyear:;
     run; 
-proc print data= out_&exposure.v&comparator._&ana_name._&outdata. ; 
-run; 
-
+    /* reprint of the unweighted and SMR-weighted results */
+    proc print data= out_&exposure.v&comparator._&ana_name._&outdata. ; 
+    run; 
 %mend analysis_Ab;
 
 /* endregion //!SECTION */

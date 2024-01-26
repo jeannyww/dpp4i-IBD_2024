@@ -63,7 +63,8 @@ option SASAUTOS=(SASAUTOS "D:\Externe Projekte\UNC\wangje\prog\sas\macros");
         min(b.filldate2) as dpp4i_filldate2 format=date9. label='DATE OF SECOND FILL OF &exposure. DRUG for switch/augmentation'
         from _new_abrahami_&comparator. as a
         LEFT JOIN temp.&exposure._useperiods as b on a.id=b.id and a.switchAugmentdate<=b.filldate2 /* <=a.discontDate */
-                order by a.id, a.indexdate;
+        group by a.id, a.indexdate
+        order by a.id, a.indexdate;
     QUIT;
     /*  creating the exposure group a la Abrahami */
     PROC SQL;
@@ -588,7 +589,6 @@ data tmp2; set tmp2; where delete_IBD ne 1;RUN;
 
 /* endregion //!SECTION */
 
-
 /*===================================*\
 //SECTION - ## 5. PS weighting adapted from 015_PSweighting.sas
 \*===================================*/
@@ -944,15 +944,15 @@ data tmp2; set tmp2; where delete_IBD ne 1;RUN;
             enddate= min(&ibd_def._dt, enddt, endstudy_dt,&outtime, death_dt, dbexit_dt,  LastColl_Dt);
             if enddate>(&intime + &induction) and enddate=&ibd_def._dt and &ibd_def ne . then event=1; else event=0;
             end;
+        /* for initiators of either drug who never switched */
         else do;
-            /* for initiators of either drug who never switched */
             enddate= min(&ibd_def._dt, enddt, endstudy_dt,&outtime, death_dt, dbexit_dt,  LastColl_Dt);
             IF enddate>(&intime + &induction) and enddate=&ibd_def._dt and &ibd_def ne . then event=1; else event=0;
         end;
         
-            format enddate date9. ; label enddate ="Date min of (&ibd_def._dt, enddt, endstudy_dt,&outtime, death_dt, dbexit_dt,  LastColl_Dt), or switch/augment date for comparators";
-            *"Date min of (&ibd_def._dt,death_dt, endstudy_dt, dbexit_dt, LastColl_Dt)";
-            enddatedelete=min( &ibd_def._dt, enddt,endstudy_dt, &outtime);  
+        format enddate date9. ; label enddate ="Date min of (&ibd_def._dt, enddt, endstudy_dt,&outtime, death_dt, dbexit_dt,  LastColl_Dt), or switch/augment date for comparators";
+        *"Date min of (&ibd_def._dt,death_dt, endstudy_dt, dbexit_dt, LastColl_Dt)";
+        enddatedelete=min( &ibd_def._dt, enddt,endstudy_dt, &outtime);  
             
         *Removing individuals who did not reach the induction period for followup ;
         IF enddatedelete<=(&intime + &induction) then deleteobs=1; 
@@ -1091,7 +1091,7 @@ run;
     %LET event = event;
     %LET logtimevar = logtime;
     %LET timevar = time;
-        proc genmod data=dsn;
+    proc genmod data=dsn;
         by &exposure;
         * class id;
         model &event= /dist=poisson offset=&logtimevar maxiter=100000;
@@ -1103,9 +1103,7 @@ run;
         set rate;
         if Label='Exp(rate)';
         rate=compress(put((LBetaEstimate),6.1))||" ("||compress(put((LBetaLowerCL),6.1))||"-"||compress(put((LBetaUpperCL),6.1))||")";
-        run;
-
-
+    run;
 
     /*===================================*\
     //SECTION - Calculating Hazard ratios   
@@ -1126,8 +1124,6 @@ run;
         cucl=exp(Estimate+1.96*StdErr);
         crudehr=compress(put((hazardratio),6.2))||" ("||compress(put((HRlowerCL),6.2))||"-"||compress(put((HRupperCL),6.2))||")";
     run;
-
-
 
     *adjusted HR-&weight*;
     %LET weight = smrw;
@@ -1198,20 +1194,20 @@ run;
         by &exposure   &timevar;
         run;
     Data Pred;
-    set Pred(keep=&exposure &timevar survival lower upper);
-    risk=1-survival;
-    risk_upper=1-lower;
-    risk_lower=1-upper;
+        set Pred(keep=&exposure &timevar survival lower upper);
+        risk=1-survival;
+        risk_upper=1-lower;
+        risk_lower=1-upper;
     run;
 
     data exp(keep=&timevar risk risk_lower risk_upper &exposure.) unexp(keep=&timevar risk risk_lower risk_upper &exposure.);
-    set  pred;
-    if &exposure=1 then output exp;
-    if &exposure=0 then output unexp;
+        set  pred;
+        if &exposure=1 then output exp;
+        if &exposure=0 then output unexp;
     run;
     Data plot;
     merge exp(rename=(risk=&exposure._risk risk_lower=&exposure._lower risk_upper=&exposure._upper)) unexp(rename=(risk=&comparator._risk risk_lower=&comparator._lower risk_upper=&comparator._upper));
-    by &timevar;
+        by &timevar;
     run;
 /* Trigger ods excel to create a new sheet for the plots and main results */
 ods excel options(sheet_interval="NOW");
@@ -1257,14 +1253,15 @@ ods excel options(sheet_interval="NOW");
     /* endregion //!SECTION */
     *gathering all results for print;
     DATA countout;
-    SET tmpp_:;
-    outcome_def="&ibd_def.";
+        SET tmpp_:;
+        outcome_def="&ibd_def.";
     RUN;
     proc sort data= countout; by drug; run;
     proc transpose data=countout out=tmp prefix= fuyear; 
-    by drug ; 
-    id fu_year; run;
-    proc print data= tmp  ;  variables drug fuyear:;
+        by drug ; 
+        id fu_year; run;
+    proc print data= tmp  ;  
+        variables drug fuyear:;
     run; 
     /* reprint of the unweighted and SMR-weighted results */
     proc print data= out_&exposure.v&comparator._&ana_name._&outdata. ; 
@@ -1278,6 +1275,5 @@ ods excel options(sheet_interval="NOW");
 * TODO - later
 \*===================================*/
 /* region */
-
 
 /* endregion //!SECTION */

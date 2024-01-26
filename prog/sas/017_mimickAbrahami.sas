@@ -32,7 +32,6 @@ option SASAUTOS=(SASAUTOS "D:\Externe Projekte\UNC\wangje\prog\sas\macros");
 //SECTION - 2. Get cohorts a la Abrahami, adapted from 012_createcohorts.sas
 \*===================================*/
 
-/* execute the macro */
 %LET exposure = dpp4i;
 %LET comparatorlist = su tzd sglt2i;
 %getCohort_Ab (exposure=&exposure.,comparatorlist= &comparatorlist.,washoutp= 365, save= Y);

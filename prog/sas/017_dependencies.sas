@@ -21,7 +21,8 @@ Date: 2024-01-21
 Notes: harmonized macros 017_mimickAbrahami1.sas and 017_mimickAbrahami2.sas into 017_dependencies.sas. 
 TODO - add counts for subsequent exclusions 
 ***************************************/
-option MAUTOSOURCE;
+options nofmterr pageno=1 fullstimer stimer stimefmt=z compress=yes ;
+options macrogen symbolgen mlogic mprint mcompile mcompilenote=all; option MAUTOSOURCE;
 option SASAUTOS=(SASAUTOS "D:\Externe Projekte\UNC\wangje\prog\sas\macros");
 %setup(programName=017_dependencies, savelog=N, dataset=_NULL_);
 
@@ -139,10 +140,6 @@ PROC SQL noprint;
     select codetype into :typelist separated by " " from varlabs  ;
     select label1 into :labellist separated by "|" from varlabs ;
 QUIT;
-/* verify */
-%put &varslist.;
-%put &typelist.;
-%put &labellist.;
 
 /* macro to iteratively label baseline variables from the label list */
 %macro label ( varlist , labellist, typelist );
@@ -179,7 +176,7 @@ QUIT;
         label &var._ever = "&lab. Rx ever prior to time0 using all lookback";
         %end;
     %end;
-    %mend label;
+%mend label;
 /* macro to merge outcome, drug class, and baseline vars, adding labels */
 %macro mergeall_Ab(exposure, comparatorlist, primaryGraceP, washoutp, save=N);
         %do z=1 %to %sysfunc(countw(&comparatorlist.));
@@ -929,12 +926,13 @@ data tmp2; set tmp2; where delete_IBD ne 1;RUN;
                 end;
             %end;
         *if the startdate is time0, ie the date of first presription;
-        %else %if %upcase(&intime) ne FILLDATE2 %then %do;
+        %if %upcase(&intime) ne FILLDATE2 %then %do;
             if &exposure =0 and switchAugmentDate ne . then do;
                 enddate= min(&ibd_def._dt, switchAugmentDate+&induction);
                 IF enddate>(&intime + &induction) and enddate=&ibd_def._dt and &ibd_def ne .    then event=1; else event=0;
                 end;
-            %end;
+        %end;
+
         /* for dpp4i initiators who were prevalent users of the comparator */
         if &exposure =1 and excludeflag_prevalentuser eq 1 then do;
             enddate= min(&ibd_def._dt, enddt, endstudy_dt,&outtime, death_dt, dbexit_dt,  LastColl_Dt);

@@ -888,8 +888,7 @@ data tmp2; set tmp2; where delete_IBD ne 1;RUN;
     /*===================================*\
     //SECTION - Setting up data for analysis 
     \*===================================*/
-    
-    data dsn; set a.Abrahami_PS_&exposure._&comparator;
+        data dsn; set a.Abrahami_PS_&exposure._&comparator;
         drop Alc_P_bc Alc_P_bl colo_bc colo_bl IBD_P_bc IBD_P_bl DivCol_I_bc DivCol_I_bl DivCol_P_bc DivCol_P_bl PCOS_bc PCOS_bl DiabGest_bc DiabGest_bl IBD_I_bc IBD_I_bl asthma_bc asthma_bl copd_bc copd_bl arrhyth_bc arrhyth_bl chf_bc chf_bl ihd_bc ihd_bl mi_bc mi_bl hyperten_bc hyperten_bl stroke_bc stroke_bl hyperlip_bc hyperlip_bl diab_bc diab_bl dvt_bc dvt_bl pe_bc pe_bl gout_bc 
         gout_bl pthyro_bc pthyro_bl mthyro_bc mthyro_bl depres_bc depres_bl affect_bc affect_bl suic_bc suic_bl sleep_bc sleep_bl schizo_bc schizo_bl epilep_bc epilep_bl renal_bc renal_bl GIulcer_bc GIulcer_bl RhArth_bc RhArth_bl alrhi_bc alrhi_bl glauco_bc glauco_bl migra_bc migra_bl sepsis_bc sepsis_bl pneumo_bc pneumo_bl nephr_bc nephr_bl nerop_bc nerop_bl dret_bc dret_bl psorI_bc psorI_bl psorP_bc psorP_bl vasc_bc vasc_bl SjSy_bc SjSy_bl sLup_bc sLup_bl PerArtD_bc PerArtD_bl AbdPain_bc AbdPain_bl Diarr_bc Diarr_bl BkStool_bc BkStool_bl Crohns_bc 
         Crohns_bl Ucolitis_bc Ucolitis_bl Icomitis_bc Icomitis_bl Gastent_bc Gastent_bl ColIle_bc ColIle_bl Sigmo_bc Sigmo_bl Biops_bc Biops_bl Ileo_bc Ileo_bl HBA1c_bc HBA1c_bl DPP4i_bc DPP4i_gc DPP4i_bl DPP4i_tot1yr SU_bc SU_gc SU_bl SU_tot1yr SGLT2i_bc SGLT2i_gc SGLT2i_bl SGLT2i_tot1yr TZD_bc TZD_gc TZD_bl TZD_tot1yr Insulin_bc Insulin_gc Insulin_bl Insulin_tot1yr bigua_bc bigua_gc bigua_bl bigua_tot1yr prand_bc prand_gc prand_bl prand_tot1yr agluco_bc agluco_gc agluco_bl agluco_tot1yr OAntGLP_bc OAntGLP_gc OAntGLP_bl OAntGLP_tot1yr AminoS_bc 
@@ -938,18 +937,23 @@ data tmp2; set tmp2; where delete_IBD ne 1;RUN;
                 IF enddate>(&intime + &induction) and enddate=&ibd_def._dt and &ibd_def ne .    then event=1; else event=0;
                 end;
         %end;
-
         /* for dpp4i initiators who were prevalent users of the comparator */
-        if &exposure =1 and excludeflag_prevalentuser eq 1 then do;
+        else if &exposure =1 and excludeflag_prevalentuser eq 1 then do;
             enddate= min(&ibd_def._dt, enddt, endstudy_dt,&outtime, death_dt, dbexit_dt,  LastColl_Dt);
             if enddate>(&intime + &induction) and enddate=&ibd_def._dt and &ibd_def ne . then event=1; else event=0;
             end;
-        /* for initiators of either drug who never switched */
-        else do;
+        /* for initiators of dpp4i who never switched from the comparator */
+        else if &exposure=1 and excludeflag_prevalentuser ne 1 then do;
+            enddate= min(&ibd_def._dt, enddt, endstudy_dt,&outtime, death_dt, dbexit_dt,  LastColl_Dt);
+            IF enddate>(&intime + &induction) and enddate=&ibd_def._dt and &ibd_def ne . then event=1; else event=0;
+        end;
+        /* for initiators of comparator drug who never switched */
+        else if &exposure=0 and switchAugmentDate eq . then do;
             enddate= min(&ibd_def._dt, enddt, endstudy_dt,&outtime, death_dt, dbexit_dt,  LastColl_Dt);
             IF enddate>(&intime + &induction) and enddate=&ibd_def._dt and &ibd_def ne . then event=1; else event=0;
         end;
         
+        *fromatting etc; 
         format enddate date9. ; label enddate ="Date min of (&ibd_def._dt, enddt, endstudy_dt,&outtime, death_dt, dbexit_dt,  LastColl_Dt), or switch/augment date for comparators";
         *"Date min of (&ibd_def._dt,death_dt, endstudy_dt, dbexit_dt, LastColl_Dt)";
         enddatedelete=min( &ibd_def._dt, enddt,endstudy_dt, &outtime);  
@@ -999,7 +1003,8 @@ proc sql noprint;
         %end;
 quit;
 proc print data= tmp_counts; run; 
-data dsn; set dsn; if time eq . then delete; run;
+data dsn; set dsn; if time eq . then delete;
+IBD_ever= max(crohns_ever, ucolitis_ever);    run;
 
 PROC SQL noprint;
     create table tmp as
@@ -1060,7 +1065,7 @@ data mediantimedu(keep=&exposure mediantimedu );
     mediantimedu = compress(put((median), 6.2)) || " (" || compress(put((q1), 6.2)) || "-" || compress(put((q3), 6.2)) || ")";  
     format sum 8.0;
 run; 
-
+/* combine median followup time and median drug duration  */
 data mediantimetmp(rename=(sum=time_sum)); 
     merge mediantime mediantimedu; 
     by &exposure; 
@@ -1074,11 +1079,37 @@ Proc means data=dsn sum stackods ;
     var event;
 run;
 /* count numbers of switchers */
-
-/* count numbers of switchers with a history of IBD */
-
+ods output summary=switchers;
+Proc means data=dsn sum stackods ;
+    where time ne .; 
+    class &exposure;
+    var keepflag_prevalentuser;RUN;
+data switchers (rename=(sum=n_switch)); 
+    set switchers;RUN;
+/* count numbers with a history of IBD */
+ods output summary=IBD_hx;
+Proc means data=dsn sum stackods ;
+    where time ne .; 
+    class &exposure;
+    var IBD_ever ;RUN;
+data IBD_hx (rename=(sum=IBD_hx_sum)); 
+    set IBD_hx;RUN;
 /* count number of switchers who had a subsequent diagnosis of IBD */
-
+ods output summary=IBD_event_switchers;
+Proc means data=dsn sum stackods ;
+    where time ne . and keepflag_prevalentuser eq 1; 
+    class &exposure;
+    var &ibd_def. ;RUN;
+data IBD_event_switchers (rename=(sum=IBD_event_switchers)); 
+    set IBD_event_switchers;RUN;
+/* count events missed due to events being attributed to Dpp4i initiators who were prevalent users of the comparator  (events that would have been in the comparator's person time as it would be in our Main IT analysis if not for the censoring at 180+switch/augment/fill2date date )*/
+ods output summary= IBD_events_censored;
+Proc means data=dsn sum stackods ;
+    where time ne . and  event eq 0; 
+    class &exposure;
+    var &ibd_def. ;RUN;
+data IBD_events_censored (rename=(sum=IBD_events_censored)); 
+    set IBD_events_censored;RUN;
 /* above outputs will be stored in work lib and merged in //Section- Output Results */
 
     /*===================================*\
@@ -1146,10 +1177,11 @@ run;
     /*===================================*\
     //SECTION - output results 
     \*===================================*/
+/* Merge and compile of counts, persontime, incidence rates, unweighted and SMR-weighted HRs */
     Data &outdata;
         length type $ 32 ;
         length analysis $ 32 ;   
-        merge mediantimetmp   event  (rename=(sum=event_sum)) rate crudehr &weight;
+        merge mediantimetmp   event  (rename=(sum=event_sum)) switchers ibd_hx ibd_event_switchers IBD_events_censored rate crudehr &weight;
         by &exposure;
         analysis="&ana_name. &type. &outdata.";
         type="&ibd_def.";
@@ -1161,17 +1193,16 @@ run;
     run;
     Data tmpout1
         (keep=&exposure 
-        Nobs type nmiss
-        mediantime mediantimedu time_sum event_sum rate crudehr &weight.HR analysis induction latency exp unexp);
+        Nobs n_switch type nmiss
+        mediantime mediantimedu time_sum event_sum IBD_event_switchers IBD_events_censored IBD_hx_sum rate crudehr &weight.HR analysis induction latency exp unexp);
         set &outdata;
         exp="&exposure.";
         unexp="&comparator.";
         label event_Sum="No. of Event";
         label time_Sum = "Person-year";
     run;
-/* Compilation of counts, persontime, incidence rates, unweighted and SMR-weighted HRs */
     Data out_&exposure.v&comparator._&ana_name._&outdata.;
-        retain &exposure Nobs TYPE time_sum event_sum rate crudehr &weight.HR analysis induction latency exp unexp; 
+        retain TYPE &exposure Nobs n_switch  time_sum event_sum IBD_event_switchers IBD_events_censored IBD_hx_sum  rate crudehr &weight.HR analysis induction latency exp unexp; 
         set tmpout1;
             
         format event_sum best12.;

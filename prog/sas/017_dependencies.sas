@@ -968,7 +968,7 @@ data tmp2; set tmp2; where delete_IBD ne 1;RUN;
         if time>0 then logtime=(log(time/100000))  ;
         else time=.;
         label time = "person-years" time_drugdur= "duration of treatment";
-        
+        IBD_ever= max(crohns_ever, ucolitis_ever);  
     RUN;
 /*=================*\
 *!SECTION Update counts for exclusion
@@ -1003,8 +1003,7 @@ proc sql noprint;
         %end;
 quit;
 proc print data= tmp_counts; run; 
-data dsn; set dsn; if time eq . then delete;
-IBD_ever= max(crohns_ever, ucolitis_ever);    run;
+data dsn; set dsn; if time eq . then delete;run;
 
 PROC SQL noprint;
     create table tmp as
@@ -1083,7 +1082,7 @@ ods output summary=switchers;
 Proc means data=dsn sum stackods ;
     where time ne .; 
     class &exposure;
-    var keepflag_prevalentuser;RUN;
+    var excludeflag_prevalentuser;RUN;
 data switchers (rename=(sum=n_switch)); 
     set switchers;RUN;
 /* count numbers with a history of IBD */
@@ -1097,7 +1096,7 @@ data IBD_hx (rename=(sum=IBD_hx_sum));
 /* count number of switchers who had a subsequent diagnosis of IBD */
 ods output summary=IBD_event_switchers;
 Proc means data=dsn sum stackods ;
-    where time ne . and keepflag_prevalentuser eq 1; 
+    where time ne . and excludeflag_prevalentuser eq 1; 
     class &exposure;
     var &ibd_def. ;RUN;
 data IBD_event_switchers (rename=(sum=IBD_event_switchers)); 

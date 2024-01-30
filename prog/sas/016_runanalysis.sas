@@ -284,6 +284,8 @@ run;
 /*===================================*\
 //SECTION - output results 
 \*===================================*/
+/* Merge and compile of counts, persontime, incidence rates, unweighted and SMR-weighted HRs */
+
 Data &outdata;
     length type $ 32 ;
     length analysis $ 32 ;   

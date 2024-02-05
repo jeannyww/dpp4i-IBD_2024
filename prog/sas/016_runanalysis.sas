@@ -117,13 +117,22 @@ data dsn; set a.ps_&exposure._&comparator;
         format enddate date9. ; label enddate ="Date min of (&ibd_def._dt, enddt, endstudy_dt,&outtime, death_dt, dbexit_dt,  LastColl_Dt)";
         *"Date min of (&ibd_def._dt,death_dt, endstudy_dt, dbexit_dt, LastColl_Dt)";
         %end;
+
+    /* Either  */
     %if %upcase(&type) # AT, IT %then %do;
-        enddatedelete=min( &ibd_def._dt, enddt,endstudy_dt, &outtime);  
-        %end;
+        *"Date min of (death_dt, endstudy_dt, dbexit_dt, LastColl_Dt)";
+        enddatedelete=min(  enddt, endstudy_dt, &outtime);  
         
-    *Removing individuals who did not reach the induction period for followup ;
-    IF enddatedelete<=(&intime + &induction) then deleteobs=1; 
-        else deleteobs=0;
+        *flag to remove individuals who did not reach the induction period for followup ;
+        IF indexdate<= enddatedelete<=(&intime + &induction) then deleteobs=1; 
+            else deleteobs=0;
+        label deleteobs="Flag to remove individuals who did not reach the induction period for followup";
+        IF indexdate <= &ibd_def._dt <=(&intime + &induction) then IBDdx_inductionperiod=1;
+            else IBDdx_inductionperiod=0;
+        label IBDdx_inductionperiod="Flag for individuals with IBD diagnosis within the induction period";
+        %end;
+
+    *Creating event variable and followup time variable; 
     IF enddate>(&intime + &induction) and enddate=&ibd_def._dt and &ibd_def ne .    then event=1; else event=0;
 
     time=(enddate-(&intime.+&induction)+1)/365.25;
@@ -131,26 +140,39 @@ data dsn; set a.ps_&exposure._&comparator;
 
     if time>0 then logtime=(log(time/100000))  ;
     else time=.;
-    label time = "person-years" time_drugdur= "duration of treatment";
-    
+    label time = "person-years" time_drugdur= "duration of treatment";        label logtime="log(person-years)";
+
+    *flag for individuals with IBD diagnosis ever (IBD before time 0) or IBD post-index date without regard to the induction period; 
+    IBD_ever= max(crohns_ever, ucolitis_ever);  
+    label IBD_ever="Ever IBD diagnosis";
+    if indexdate<= &ibd_def._dt then IBD_postindex=1; else IBD_postindex=0;
 RUN;
 /*=================*\
 Update counts for exclusion
 \*=================*/
 PROC SQL noprint; 
-    create table tmp_counts as select * from temp.exclusions_015_&exposure._&comparator.;
+    create table tmp_counts as select * from temp.Abexclusions_015_&exposure._&comparator.;
     select count(*) into : num_obs from tmp_counts;
     insert into tmp_counts
         set exclusion_num=&num_obs+1, 
-        long_text="Number of observations after excluding individuals whose &ibd_def._dt or endstudy_dt <= &intime. + &induction.",
+        long_text="Number of observations after excluding individuals whose endstudy_dt <= &intime. + &induction.",
         dpp4i= (select count(*) from dsn where (&exposure=1 and deleteobs=0)),
         dpp4i_diff= -(select count(*) from dsn where (&exposure=1 and deleteobs=1)),
         &comparator.=(select count(*) from dsn where (&exposure ne 1 and deleteobs=0)) ,
         &comparator._diff= -(select count(*) from dsn where (&exposure ne 1 and deleteobs=1)),   
         full= (select count(*) from dsn where (deleteobs=0));
-    *select * from tmp_counts;
+    insert into tmp_counts
+        set exclusion_num=&num_obs+2, 
+        long_text="Number of individuals with time0 <&ibd_def._dt <= &intime. + &induction.",
+        dpp4i= (select count(*) from dsn where (&exposure=1 and IBDdx_inductionperiod=0)),
+        dpp4i_diff= -(select count(*) from dsn where (&exposure=1 and IBDdx_inductionperiod=1)),
+        &comparator.=(select count(*) from dsn where (&exposure ne 1 and IBDdx_inductionperiod=0)) ,
+        &comparator._diff= -(select count(*) from dsn where (&exposure ne 1 and IBDdx_inductionperiod=1)),
+        full= (select count(*) from dsn where (IBDdx_inductionperiod=0));
 QUIT;
-data dsn; set dsn; if deleteobs=1 then delete; run;
+data dsn; set dsn; 
+    if deleteobs=1 then delete;
+    if IBDdx_inductionperiod=1 then delete; run;
 proc sql noprint;
     select count(*) into : num_obs from tmp_counts;
     insert into tmp_counts

@@ -151,7 +151,7 @@ RUN;
 Update counts for exclusion
 \*=================*/
 PROC SQL noprint; 
-    create table tmp_counts as select * from temp.Abexclusions_015_&exposure._&comparator.;
+    create table tmp_counts as select * from temp.exclusions_015_&exposure._&comparator.;
     select count(*) into : num_obs from tmp_counts;
     insert into tmp_counts
         set exclusion_num=&num_obs+1, 

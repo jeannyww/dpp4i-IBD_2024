@@ -1180,7 +1180,11 @@ data IBD_events_censored (rename=(sum=IBD_events_censored));
     Data &outdata;
         length type $ 32 ;
         length analysis $ 32 ;   
-        merge mediantimetmp   event  (rename=(sum=event_sum)) switchers ibd_hx ibd_event_switchers IBD_events_censored rate crudehr &weight;
+        merge mediantimetmp   
+        event  (rename=(sum=event_sum)) switchers (keep= &exposure n_switch) ibd_hx (keep= &exposure IBD_hx_sum) 
+        ibd_event_switchers (keep= &exposure IBD_event_switchers)
+        IBD_events_censored (keep= &exposure IBD_events_censored) 
+        rate crudehr &weight;
         by &exposure;
         analysis="&ana_name. &type. &outdata.";
         type="&ibd_def.";

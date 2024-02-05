@@ -47,6 +47,7 @@ data temp.exclusions_box0_all;
 run;
 data temp.exclusions_dpp4i_su; set temp.exclusions_box0_all; keep exclusion_num long_text dpp4i su full; run;
 data temp.exclusions_dpp4i_tzd; set temp.exclusions_box0_all; keep exclusion_num long_text dpp4i tzd full; run;
+
 data temp.exclusions_dpp4i_sglt2i; set temp.exclusions_box0_all; keep exclusion_num long_text dpp4i sglt2i full; run;
 
 

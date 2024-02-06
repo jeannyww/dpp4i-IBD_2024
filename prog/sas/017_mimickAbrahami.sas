@@ -223,20 +223,29 @@ outtime =  ,      *time which analysis fu ends, ie for AT: '31Dec2017'd, for ITT
 , outdata= );
 ---------------------------------------------------------------------*/
 
-ods excel file="&toutpath./Abrahami_T2compiled_&todaysdate..xlsx"
+ods excel file="&toutpath./se_Abrahami_T2compiled_&todaysdate..xlsx"
 options (
     Sheet_interval="NONE"
     embedded_titles="NO"
     embedded_footnotes="NO"
 );
     ods excel options(sheet_name="DPP4i_SU IT" sheet_interval="NOW");
-    %analysis_Ab ( exposure= dpp4i , comparator= su, ana_name=main, type= IT, weight= smrw, induction= 180, latency= 180 , ibd_def= ibd1, intime= filldate2, outtime='31Dec2022'd , outdata=IT , save=N ) ;
+    %analysis_Ab (exclude_ibd=N, exposure= dpp4i , comparator= su, ana_name=main, type= IT, weight= smrw, induction= 180, latency= 180 , ibd_def= ibd1, intime= filldate2, outtime='31Dec2022'd , outdata=IT , save=N ) ;
     
     ods excel options(sheet_name="DPP4i_TZD IT" sheet_interval="NOW");
-    %analysis_Ab ( exposure= dpp4i , comparator= tzd, ana_name=main, type= IT, weight= smrw, induction= 180, latency= 180 , ibd_def= ibd1, intime= filldate2, outtime='31Dec2022'd , outdata=IT , save=N ) ;
+    %analysis_Ab (exclude_ibd=N, exposure= dpp4i , comparator= tzd, ana_name=main, type= IT, weight= smrw, induction= 180, latency= 180 , ibd_def= ibd1, intime= filldate2, outtime='31Dec2022'd , outdata=IT , save=N ) ;
         
     ods excel options(sheet_name="DPP4i_SGLT2i IT" sheet_interval="NOW");
-    %analysis_Ab ( exposure= dpp4i , comparator= sglt2i, ana_name=main, type= IT, weight= smrw, induction= 180, latency= 180 , ibd_def= ibd1, intime= filldate2, outtime='31Dec2022'd , outdata=IT , save=N ) ;
+    %analysis_Ab (exclude_ibd=N, exposure= dpp4i , comparator= sglt2i, ana_name=main, type= IT, weight= smrw, induction= 180, latency= 180 , ibd_def= ibd1, intime= filldate2, outtime='31Dec2022'd , outdata=IT , save=N ) ;
+    
+    ods excel options(sheet_name="se_DPP4i_SU IT" sheet_interval="NOW");
+    %analysis_Ab (exclude_ibd=Y, exposure= dpp4i , comparator= su, ana_name=main, type= IT, weight= smrw, induction= 180, latency= 180 , ibd_def= ibd1, intime= filldate2, outtime='31Dec2022'd , outdata=IT , save=N ) ;
+    
+    ods excel options(sheet_name="se_DPP4i_TZD IT" sheet_interval="NOW");
+    %analysis_Ab (exclude_ibd=Y, exposure= dpp4i , comparator= tzd, ana_name=main, type= IT, weight= smrw, induction= 180, latency= 180 , ibd_def= ibd1, intime= filldate2, outtime='31Dec2022'd , outdata=IT , save=N ) ;
+        
+    ods excel options(sheet_name="se_DPP4i_SGLT2i IT" sheet_interval="NOW");
+    %analysis_Ab (exclude_ibd=Y, exposure= dpp4i , comparator= sglt2i, ana_name=main, type= IT, weight= smrw, induction= 180, latency= 180 , ibd_def= ibd1, intime= filldate2, outtime='31Dec2022'd , outdata=IT , save=N ) ;
     
     ods excel options(sheet_name="Log_issues" sheet_interval="NOW");
     %CheckLog( ,ext=LOG,subdir=N,keyword=,exclude=,out=temp.Log_issues,pm=N,sound=N,relog=N,print=Y,to=,cc=,logdef=LOG,dirext=N,shadow=Y,abort=N,test=);

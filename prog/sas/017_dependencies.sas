@@ -389,10 +389,10 @@ QUIT;
             a.&comparator._bl as &exposure.initiator_&comparator._bl,
             b.&exposure._bl as &comparator.initiator_&exposure._bl,
             b.&comparator._bl as &comparator.initiator_&comparator._bl, 
-            a.ibd_ever as &exposure.initiator_ibd_ever,
+            a.ibd_P_ever as &exposure.initiator_ibd_ever,
             a.crohns_bl as &exposure.initiator_crohns_bl,
             a.ucolitis_bl as &exposure.initiator_ucolitis_bl,
-            b.ibd_ever as &comparator.initiator_ibd_ever, 
+            b.ibd_P_ever as &comparator.initiator_ibd_ever, 
             b.crohns_bl as &comparator.initiator_crohns_bl, 
             b.ucolitis_bl as &comparator.initiator_ucolitis_bl, 
             b.icomitis_bl as &comparator.initiator_icomitis_bl,
@@ -597,7 +597,7 @@ data tmp2; set tmp2; where delete_IBD ne 1;RUN;
     QUIT;
     data tmp2; set tmp2; where delete_IBDmeds ne 1;
         if keepflag_prevalentuser ne 1 then do; if (colile_bl not in (., 0) ) then delete_colile=1;
-        else if (keepflag_prevalentuser eq 1 and &comparator.initiator_ibd_ever eq 1) then delete_colile=1;
+        else if (keepflag_prevalentuser eq 1 and &comparator.initiator_colile_bl eq 1) then delete_colile=1;
         end;         
         RUN;
     PROC SQL NOPRINT; 
@@ -965,12 +965,18 @@ data tmp2; set tmp2; where delete_IBD ne 1;RUN;
 \*===================================*/
 /* region */
 
-%macro analysis_Ab ( exposure , comparator , ana_name , type , weight , induction , latency , ibd_def , intime , outtime , outdata, save ) / minoperator mindelimiter=',';
+%macro analysis_Ab (exclude_ibd, exposure , comparator , ana_name , type , weight , induction , latency , ibd_def , intime , outtime , outdata, save ) / minoperator mindelimiter=',';
 
     /*===================================*\
     //SECTION - Setting up data for analysis 
     \*===================================*/
-        data dsn; set a.Abrahami_PS_&exposure._&comparator;
+        %if &exclude_ibd. eq Y %then %do;
+            data dsn; set a.Abrahami_PS_&exposure._&comparator; where IBD_ever ne 1;RUN;
+        %end;
+        %else %if &exclude_ibd. eq N %then %do;
+            data dsn; set set a.Abrahami_PS_&exposure._&comparator; RUN;
+        %end;
+        data dsn; set dsn; 
         drop Alc_P_bc Alc_P_bl colo_bc colo_bl IBD_P_bc IBD_P_bl DivCol_I_bc DivCol_I_bl DivCol_P_bc DivCol_P_bl PCOS_bc PCOS_bl DiabGest_bc DiabGest_bl IBD_I_bc IBD_I_bl asthma_bc asthma_bl copd_bc copd_bl arrhyth_bc arrhyth_bl chf_bc chf_bl ihd_bc ihd_bl mi_bc mi_bl hyperten_bc hyperten_bl stroke_bc stroke_bl hyperlip_bc hyperlip_bl diab_bc diab_bl dvt_bc dvt_bl pe_bc pe_bl gout_bc 
         gout_bl pthyro_bc pthyro_bl mthyro_bc mthyro_bl depres_bc depres_bl affect_bc affect_bl suic_bc suic_bl sleep_bc sleep_bl schizo_bc schizo_bl epilep_bc epilep_bl renal_bc renal_bl GIulcer_bc GIulcer_bl RhArth_bc RhArth_bl alrhi_bc alrhi_bl glauco_bc glauco_bl migra_bc migra_bl sepsis_bc sepsis_bl pneumo_bc pneumo_bl nephr_bc nephr_bl nerop_bc nerop_bl dret_bc dret_bl psorI_bc psorI_bl psorP_bc psorP_bl vasc_bc vasc_bl SjSy_bc SjSy_bl sLup_bc sLup_bl PerArtD_bc PerArtD_bl AbdPain_bc AbdPain_bl Diarr_bc Diarr_bl BkStool_bc BkStool_bl Crohns_bc 
         Crohns_bl Ucolitis_bc Ucolitis_bl Icomitis_bc Icomitis_bl Gastent_bc Gastent_bl ColIle_bc ColIle_bl Sigmo_bc Sigmo_bl Biops_bc Biops_bl Ileo_bc Ileo_bl HBA1c_bc HBA1c_bl DPP4i_bc DPP4i_gc DPP4i_bl DPP4i_tot1yr SU_bc SU_gc SU_bl SU_tot1yr SGLT2i_bc SGLT2i_gc SGLT2i_bl SGLT2i_tot1yr TZD_bc TZD_gc TZD_bl TZD_tot1yr Insulin_bc Insulin_gc Insulin_bl Insulin_tot1yr bigua_bc bigua_gc bigua_bl bigua_tot1yr prand_bc prand_gc prand_bl prand_tot1yr agluco_bc agluco_gc agluco_bl agluco_tot1yr OAntGLP_bc OAntGLP_gc OAntGLP_bl OAntGLP_tot1yr AminoS_bc 

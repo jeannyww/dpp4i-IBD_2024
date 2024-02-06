@@ -346,7 +346,7 @@ QUIT;
         if &exposure. eq 0 then excludeflag_prevalentuser =max(&exposure._ever);
         *if &exposure. eq 1 then excludeflag_prevalentuser =max(&comparator._tot1yr ne . and &comparator._tot1yr>0);
         *if &exposure. eq 0 then excludeflag_prevalentuser =max(&exposure._tot1yr ne . and &exposure._tot1yr>0);
-        label excludeflag_prevalentuser ='EXCLUSION FLAG: prevalent user of comparator drug';
+        label excludeflag_prevalentuser ='EXCLUSION FLAG: prevalent user of comparator drug based on ever/never definition';
         /* formats  */    
         format sex $sexf. alcohol_cat $statusf. smoke $statusf. hba1c_cat  hba1cf. bmi_cat bmif.;
     run;
@@ -369,18 +369,92 @@ QUIT;
 %macro createana_Ab(exposure=, comparatorlist=, save=N);
 %do i = 1 %to %sysfunc(countw(&comparatorlist));
 %LET comparator = %scan(&comparatorlist, &i);
-        /* Bring in counts and merged dataset */
-    data tmp1; set temp.Abrahami_allmerged_&exposure._&comparator.;RUN;
-    data tmpana_&exposure._&comparator.;
-        set tmp1;
-        if (/* excludeflag_prevalentuser eq 1 or */ excludeflag_samedayinitiator eq 1 or excludeflag_prefill2initiator eq 1 or filldate2 eq . ) then delete; 
-        /* Only excluding prevalent users if the patient was an initiator of the comparator drug class */
+    /* loading in the Abrahami merged dataset */
+    data tmp1; set temp.Abrahami_allmerged_&exposure._&comparator.;
         if (&exposure eq 1 and excludeflag_prevalentuser eq 1) then keepflag_prevalentuser=1;
-        if (&exposure eq 0 and excludeflag_prevalentuser eq 1) then delete;
+        IBD_ever= max(crohns_ever, ucolitis_ever);  
+        label IBD_ever="Ever IBD diagnosis";
+        RUN;
+    /* Flagging and identifying switcher through temp datasets */
+    PROC SQL;
+    create table overlap_&exposure._&comparator. as
+    select distinct a.id, 
+            b.indexdate as &comparator._index,
+            a.indexdate as &exposure._index , 
+            a.&exposure._ever as &exposure.initiator_&exposure._ever,
+            a.&comparator._ever as &exposure.initiator_&comparator._ever,
+            b.&exposure._ever as &comparator.initiator_&exposure._ever,
+            b.&comparator._ever as &comparator.initiator_&comparator._ever,
+            a.&exposure._bl as &exposure.initiator_&exposure._bl,
+            a.&comparator._bl as &exposure.initiator_&comparator._bl,
+            b.&exposure._bl as &comparator.initiator_&exposure._bl,
+            b.&comparator._bl as &comparator.initiator_&comparator._bl, 
+            a.ibd_ever as &exposure.initiator_ibd_ever,
+            a.crohns_bl as &exposure.initiator_crohns_bl,
+            a.ucolitis_bl as &exposure.initiator_ucolitis_bl,
+            b.ibd_ever as &comparator.initiator_ibd_ever, 
+            b.crohns_bl as &comparator.initiator_crohns_bl, 
+            b.ucolitis_bl as &comparator.initiator_ucolitis_bl, 
+            b.icomitis_bl as &comparator.initiator_icomitis_bl,
+            b.DivCol_P_bl as &comparator.initiator_DivCol_P_bl,
+            b.AminoS_bl as &comparator.initiator_AminoS_bl,
+            b.budeo_bl as &comparator.initiator_budeo_bl,
+            b.tnfai_bl as &comparator.initiator_tnfai_bl,
+            b.otherimm_bl as &comparator.initiator_otherimm_bl,
+            b.colile_bl as &comparator.initiator_colile_bl
+        from tmp1 (where=(&exposure eq 1)) as a 
+        inner join tmp1 (where=(&exposure eq 0)) as b
+        on a.id=b.id;
+    /* Flagging ids of documented SU-->DPP4i switch */
+    create table dpp4i_initiator_pu as select distinct id as id_pu,    
+    1 as keepflag_prevalentuser,
+    &exposure.initiator_ibd_ever,
+    &exposure.initiator_crohns_bl,
+    &exposure.initiator_ucolitis_bl,
+    &comparator.initiator_ibd_ever, 
+    &comparator.initiator_crohns_bl, 
+    &comparator.initiator_ucolitis_bl, 
+    &comparator.initiator_icomitis_bl,
+    &comparator.initiator_DivCol_P_bl,
+    &comparator.initiator_AminoS_bl,
+    &comparator.initiator_budeo_bl,
+    &comparator.initiator_tnfai_bl,
+    &comparator.initiator_otherimm_bl,
+    &comparator.initiator_colile_bl
+    from overlap_&exposure._&comparator. where (&comparator._index le &exposure._index);
+    /* Creating a portion of the tmp1 to stack onto tmpana_&exposure._&comparator. */
+    create table dpp4i_initiator_pu2 as select b.*, 
+    a.keepflag_prevalentuser,
+    a.&exposure.initiator_ibd_ever,
+    a.&exposure.initiator_crohns_bl,
+    a.&exposure.initiator_ucolitis_bl,
+    a.&comparator.initiator_ibd_ever, 
+    a.&comparator.initiator_crohns_bl, 
+    a.&comparator.initiator_ucolitis_bl, 
+    a.&comparator.initiator_icomitis_bl,
+    a.&comparator.initiator_DivCol_P_bl,
+    a.&comparator.initiator_AminoS_bl,
+    a.&comparator.initiator_budeo_bl,
+    a.&comparator.initiator_tnfai_bl,
+    a.&comparator.initiator_otherimm_bl,
+    a.&comparator.initiator_colile_bl
+    from dpp4i_initiator_pu as a inner join tmp1 (where=(keepflag_prevalentuser eq 1)) as b on a.id_pu=b.id;
+    QUIT;
+
+    data tmpana_&exposure._&comparator.;
+        set tmp1 (where= (excludeflag_prevalentuser ne 1))
+        dpp4i_initiator_pu2 (in=a);
+        if a then keepflag_prevalentuser=1; else keepflag_prevalentuser=0;
+        if (/* excludeflag_prevalentuser eq 1 or */ excludeflag_samedayinitiator eq 1 or excludeflag_prefill2initiator eq 1 or filldate2 eq . ) then delete; 
         /* Tailoring the Main analysis exclusion criteria to mimic Abrahami's time-varying treatment and outcome design, where prevalent users were included for dpp4i but not for the comparator */
         if keepflag_prevalentuser ne 1 then do; 
             if ((crohns_bl not in (., 0) or ucolitis_bl not in (., 0) or icomitis_bl not in (., 0) or DivCol_P_bl not in (., 0) )) then delete;    
             if ((AminoS_bl not in (., 0) or budeo_bl not in (., 0) or tnfai_bl not in (., 0) or otherimm_bl not in (., 0) )) or (colile_bl not in (., 0) ) then delete;
+            END;
+            /* Excluding only prevalent users whose IBD hx was during the comparator use history */
+        else if (keepflag_prevalentuser eq 1) then do;
+            if ((&comparator.initiator_crohns_bl not in (., 0) or &comparator.initiator_ucolitis_bl not in (., 0) or &comparator.initiator_icomitis_bl not in (., 0) or &comparator.initiator_DivCol_P_bl not in (., 0) )) then delete;    
+            if ((&comparator.initiator_AminoS_bl not in (., 0) or &comparator.initiator_budeo_bl not in (., 0) or &comparator.initiator_tnfai_bl not in (., 0) or &comparator.initiator_otherimm_bl not in (., 0) )) or (&comparator.initiator_colile_bl not in (., 0) ) then delete;
             END;
         /* exclude prior to 2012 for sglt2i */
         %if &comparator eq sglt2i %then %do; 
@@ -403,11 +477,11 @@ QUIT;
         insert into tmp_counts 
         set exclusion_num= &num_obs+1 ,
             long_text="Initiators after exclusions a through c (non-mutually exclusive)", 
-            dpp4i=(select count(*) from tmp1 where dpp4i=1 and not (excludeflag_samedayinitiator=1 or excludeflag_prefill2initiator=1 or filldate2=.)),
+            dpp4i=(select count(*) from tmp1 where dpp4i=1 and not (excludeflag_prevalentuser eq 1 or excludeflag_samedayinitiator=1 or excludeflag_prefill2initiator=1 or filldate2=.)),
             &comparator.= (select count(*) from tmp1 where dpp4i=0 and not (excludeflag_prevalentuser eq 1 or excludeflag_samedayinitiator=1 or excludeflag_prefill2initiator=1 or filldate2=.)),
-            dpp4i_diff= -(select count(*) from tmp1 where dpp4i=1 and (excludeflag_samedayinitiator=1 or excludeflag_prefill2initiator=1 or filldate2=.)),
+            dpp4i_diff= -(select count(*) from tmp1 where dpp4i=1 and (excludeflag_prevalentuser eq 1 or  excludeflag_samedayinitiator=1 or excludeflag_prefill2initiator=1 or filldate2=.)),
             &comparator._diff= -(select count(*) from tmp1 where dpp4i=0 and (excludeflag_prevalentuser eq 1 or excludeflag_samedayinitiator=1 or excludeflag_prefill2initiator=1 or filldate2=.));
-        /* Were prevalent users of the comaprator drug */
+        /* Were prevalent users of the comparator drug */
         insert into tmp_counts 
             set exclusion_num= &num_obs+2 ,
             long_text="a. Were prevalent users of &exposure. or &comparator. drug", 
@@ -428,27 +502,33 @@ QUIT;
         /* had no second prescription */
         insert into tmp_counts 
         set exclusion_num= &num_obs+5,
-            long_text="d. Had no respecitve second &exposure. or &comparator. prescription", 
+            long_text="d. Had no respective second &exposure. or &comparator. prescription", 
             dpp4i_diff= -(select count(*) from tmp1 where dpp4i=1 and filldate2=.),
             &comparator._diff= -(select count(*) from tmp1 where dpp4i=0 and filldate2=.);
     quit;
     data tmp2;
-                set tmp1;
+        set tmp1 (where= (excludeflag_prevalentuser ne 1))
+        dpp4i_initiator_pu2;
         if (/* excludeflag_prevalentuser eq 1 or */ excludeflag_samedayinitiator eq 1 or excludeflag_prefill2initiator eq 1 or filldate2 eq . ) then delete; 
-        /* Only excluding prevalent users if the patient was an initiator of the comparator drug class */
-        if (&exposure eq 1 and excludeflag_prevalentuser eq 1) then keepflag_prevalentuser=1;
-        if (&exposure eq 0 and excludeflag_prevalentuser eq 1) then delete;
 
         if keepflag_prevalentuser ne 1 then do; 
             if ((crohns_bl not in (., 0) or ucolitis_bl not in (., 0) or icomitis_bl not in (., 0) or DivCol_P_bl not in (., 0) )) then delete_IBD=1;    
             if ((AminoS_bl not in (., 0) or budeo_bl not in (., 0) or tnfai_bl not in (., 0) or otherimm_bl not in (., 0) )) then delete_ibdmeds=1;
             END;
+            else if (keepflag_prevalentuser eq 1) then do;
+                if ((&comparator.initiator_crohns_bl not in (., 0) or &comparator.initiator_ucolitis_bl not in (., 0) or &comparator.initiator_icomitis_bl not in (., 0) or &comparator.initiator_DivCol_P_bl not in (., 0) )) then delete_IBD=1;    
+                if ((&comparator.initiator_AminoS_bl not in (., 0) or &comparator.initiator_budeo_bl not in (., 0) or &comparator.initiator_tnfai_bl not in (., 0) or &comparator.initiator_otherimm_bl not in (., 0) )) or (&comparator.initiator_colile_bl not in (., 0) ) then delete_ibdmeds=1;
+            END;
         RUN;
-    PROC SQL NOPRINT; 
+        PROC SQL NOPRINT; 
         select count(*) into :num_obs from tmp_counts;        
         * Had the following diagnosed diseases before the first prescription were excluded: (a-f non-mutually exclusive)) ;
         insert into tmp_counts 
         set exclusion_num= &num_obs+1 ,
+        long_text="* Adding back DPP4i initiators who were prevalent users of comparator drug", 
+        dpp4i_diff=(select count(*) from tmp2 where dpp4i=1 and keepflag_prevalentuser=1);
+        insert into tmp_counts 
+        set exclusion_num= &num_obs+2 ,
         long_text="Had the diagnosed diseases before the first prescription (a-f non-mutually exclusive)",
         dpp4i= (select count(*) from tmp2 where dpp4i=1 and delete_IBD ne 1), 
         dpp4i_diff= -(select count(*) from tmp2 where dpp4i=1 and delete_IBD eq 1)  ,
@@ -456,25 +536,25 @@ QUIT;
         &comparator._diff=- (select count(*) from tmp2 where dpp4i=0 and delete_IBD eq 1);
         /*  a. Had Chron's disease */
         insert into tmp_counts 
-        set exclusion_num= &num_obs+2 ,
+        set exclusion_num= &num_obs+3 ,
         long_text="a. Had Crohn's disease", 
         dpp4i_diff= -(select count(*) from tmp2 where dpp4i=1 and delete_IBD eq 1 and crohns_bl not in (., 0)),
         &comparator._diff= -(select count(*) from tmp2 where dpp4i=0 and delete_IBD eq 1 and crohns_bl not in (., 0));
         /*  b. had Ulcerative colitis */
         insert into tmp_counts 
-        set exclusion_num= &num_obs+3 ,
+        set exclusion_num= &num_obs+4 ,
         long_text="b. Had Ulcerative colitis", 
         dpp4i_diff= -(select count(*) from tmp2 where dpp4i=1 and delete_IBD eq 1 and ucolitis_bl not in (., 0)),
         &comparator._diff= -(select count(*) from tmp2 where dpp4i=0 and delete_IBD eq 1 and ucolitis_bl not in (., 0));
         /*  c. had ischemic colitis */
         insert into tmp_counts 
-        set exclusion_num= &num_obs+4 ,
+        set exclusion_num= &num_obs+5 ,
                 long_text="c. Had ischemic colitis", 
                 dpp4i_diff= -(select count(*) from tmp2 where dpp4i=1 and delete_IBD eq 1 and icomitis_bl not in (., 0)),
                 &comparator._diff= -(select count(*) from tmp2 where dpp4i=0 and delete_IBD eq 1 and icomitis_bl not in (., 0));
         /*  d. had diverticulitis or other colitis*/
             insert into tmp_counts 
-            set exclusion_num= &num_obs+5 ,
+            set exclusion_num= &num_obs+6 ,
             long_text="d. Had diverticulitis or other colitis", 
             dpp4i_diff= -(select count(*) from tmp2 where dpp4i=1 and delete_IBD eq 1  and DivCol_P_bl not in (., 0)),
             &comparator._diff= -(select count(*) from tmp2 where dpp4i=0  and delete_IBD eq 1 and DivCol_P_bl not in (., 0));        
@@ -517,7 +597,9 @@ data tmp2; set tmp2; where delete_IBD ne 1;RUN;
     QUIT;
     data tmp2; set tmp2; where delete_IBDmeds ne 1;
         if keepflag_prevalentuser ne 1 then do; if (colile_bl not in (., 0) ) then delete_colile=1;
-        end; RUN;
+        else if (keepflag_prevalentuser eq 1 and &comparator.initiator_ibd_ever eq 1) then delete_colile=1;
+        end;         
+        RUN;
     PROC SQL NOPRINT; 
         select count(*) into :num_obs from tmp_counts;
         /* Initiators with the following procedures before the first prescription were excluded  */
@@ -930,7 +1012,7 @@ data tmp2; set tmp2; where delete_IBD ne 1;RUN;
                 IF enddate>(&intime + &induction) and enddate=&ibd_def._dt and &ibd_def ne .    then event=1; else event=0;
                 end;
             %end;
-        *if the startdate is time0, ie the date of first presription;
+        *if the startdate is time0, ie the date of first prescription;
         %if %upcase(&intime) ne FILLDATE2 %then %do;
             if &exposure =0 and switchAugmentDate ne . then do;
                 enddate= min(&ibd_def._dt, switchAugmentDate+&induction);
@@ -953,22 +1035,29 @@ data tmp2; set tmp2; where delete_IBD ne 1;RUN;
             IF enddate>(&intime + &induction) and enddate=&ibd_def._dt and &ibd_def ne . then event=1; else event=0;
         end;
         
-        *fromatting etc; 
+        *formatting etc; 
         format enddate date9. ; label enddate ="Date min of (&ibd_def._dt, enddt, endstudy_dt,&outtime, death_dt, dbexit_dt,  LastColl_Dt), or switch/augment date for comparators";
-        *"Date min of (&ibd_def._dt,death_dt, endstudy_dt, dbexit_dt, LastColl_Dt)";
-        enddatedelete=min( &ibd_def._dt, enddt,endstudy_dt, &outtime);  
-            
-        *Removing individuals who did not reach the induction period for followup ;
-        IF enddatedelete<=(&intime + &induction) then deleteobs=1; 
+
+        *"Date min of (death_dt, endstudy_dt, dbexit_dt, LastColl_Dt)";
+        enddatedelete=min(  enddt, endstudy_dt, &outtime);  
+        
+        *flag to remove individuals who did not reach the induction period for followup ;
+        IF indexdate<= enddatedelete<=(&intime + &induction) then deleteobs=1; 
             else deleteobs=0;
-    
+        label deleteobs="Flag to remove individuals who did not reach the induction period for followup";
+        IF indexdate <= &ibd_def._dt <=(&intime + &induction) then IBDdx_inductionperiod=1;
+            else IBDdx_inductionperiod=0;
+        label IBDdx_inductionperiod="Flag for individuals with IBD diagnosis within the induction period";
+        * followup time;
         time=(enddate-(&intime.+&induction)+1)/365.25;
         time_drugdur=(min(rxchange, enddate)-(indexdate+1))/365.25;    
     
         if time>0 then logtime=(log(time/100000))  ;
         else time=.;
         label time = "person-years" time_drugdur= "duration of treatment";
-        IBD_ever= max(crohns_ever, ucolitis_ever);  
+        label logtime="log(person-years)";
+        *flag for individuals with IBD diagnosis ever (IBD before time 0) or IBD post-index date without regard to the induction period; 
+        if indexdate<= &ibd_def._dt then IBD_postindex=1; else IBD_postindex=0;
     RUN;
 /*=================*\
 *!SECTION Update counts for exclusion
@@ -978,15 +1067,24 @@ PROC SQL noprint;
     select count(*) into : num_obs from tmp_counts;
     insert into tmp_counts
         set exclusion_num=&num_obs+1, 
-        long_text="Number of observations after excluding individuals whose &ibd_def._dt or endstudy_dt <= &intime. + &induction.",
+        long_text="Number of observations after excluding individuals whose endstudy_dt <= &intime. + &induction.",
         dpp4i= (select count(*) from dsn where (&exposure=1 and deleteobs=0)),
         dpp4i_diff= -(select count(*) from dsn where (&exposure=1 and deleteobs=1)),
         &comparator.=(select count(*) from dsn where (&exposure ne 1 and deleteobs=0)) ,
         &comparator._diff= -(select count(*) from dsn where (&exposure ne 1 and deleteobs=1)),   
         full= (select count(*) from dsn where (deleteobs=0));
-    *select * from tmp_counts;
+    insert into tmp_counts
+        set exclusion_num=&num_obs+2, 
+        long_text="Number of individuals with time0 <&ibd_def._dt <= &intime. + &induction.",
+        dpp4i= (select count(*) from dsn where (&exposure=1 and IBDdx_inductionperiod=0)),
+        dpp4i_diff= -(select count(*) from dsn where (&exposure=1 and IBDdx_inductionperiod=1)),
+        &comparator.=(select count(*) from dsn where (&exposure ne 1 and IBDdx_inductionperiod=0)) ,
+        &comparator._diff= -(select count(*) from dsn where (&exposure ne 1 and IBDdx_inductionperiod=1)),
+        full= (select count(*) from dsn where (IBDdx_inductionperiod=0));
 QUIT;
-data dsn; set dsn; if deleteobs=1 then delete; run;
+data dsn; set dsn; 
+    if deleteobs=1 then delete;
+    if IBDdx_inductionperiod=1 then delete; run;
 proc sql noprint;
     select count(*) into : num_obs from tmp_counts;
     insert into tmp_counts

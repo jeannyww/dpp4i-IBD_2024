@@ -971,10 +971,10 @@ data tmp2; set tmp2; where delete_IBD ne 1;RUN;
     //SECTION - Setting up data for analysis 
     \*===================================*/
         %if &exclude_ibd. eq Y %then %do;
-            data dsn; set a.Abrahami_PS_&exposure._&comparator; where IBD_ever ne 1;RUN;
+            data dsn; set a.Abrahami_PS_&exposure._&comparator; where IBD_ever ne 1;RUN; 
         %end;
         %else %if &exclude_ibd. eq N %then %do;
-            data dsn; set set a.Abrahami_PS_&exposure._&comparator; RUN;
+            data dsn; set a.Abrahami_PS_&exposure._&comparator; RUN;
         %end;
         data dsn; set dsn; 
         drop Alc_P_bc Alc_P_bl colo_bc colo_bl IBD_P_bc IBD_P_bl DivCol_I_bc DivCol_I_bl DivCol_P_bc DivCol_P_bl PCOS_bc PCOS_bl DiabGest_bc DiabGest_bl IBD_I_bc IBD_I_bl asthma_bc asthma_bl copd_bc copd_bl arrhyth_bc arrhyth_bl chf_bc chf_bl ihd_bc ihd_bl mi_bc mi_bl hyperten_bc hyperten_bl stroke_bc stroke_bl hyperlip_bc hyperlip_bl diab_bc diab_bl dvt_bc dvt_bl pe_bc pe_bl gout_bc 
@@ -1227,9 +1227,9 @@ data IBD_events_censored (rename=(sum=IBD_events_censored));
     %LET timevar = time;
     proc genmod data=dsn;
         by &exposure;
-        * class id;
+        class id;
         model &event= /dist=poisson offset=&logtimevar maxiter=100000;
-        * repeated subject=id;
+        repeated subject=id;
         estimate 'rate' int 1/exp;
         ods output estimates=rate;
         run;
@@ -1313,7 +1313,7 @@ data IBD_events_censored (rename=(sum=IBD_events_censored));
         set tmpout1;
             
         format event_sum best12.;
-        format Nobs COMMA12. event_sum COMMA12. time_sum COMMA12. ;
+        format Nobs COMMA12. event_sum COMMA12. time_sum COMMA12. ibd_event_switchers COMMA12. IBD_events_censored COMMA12. IBD_hx_sum COMMA12. n_switch COMMA12. ;
     run;
 
     /*===================================*\

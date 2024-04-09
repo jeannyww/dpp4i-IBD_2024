@@ -16,7 +16,7 @@ Input paths:
             libname temp  D:\Externe Projekte\UNC\wangje\data\temp
 Other details: CPRD-DPP4i project in collaboration with USB
 
-CHANGES:
+CHANGES:2024-04-09- ADDED AT ANALYSIS SEE LINE 257 
 Date: 2024-01-21
 Notes: see git @jeannyww
 ***************************************/
@@ -251,6 +251,37 @@ options (
     %CheckLog( ,ext=LOG,subdir=N,keyword=,exclude=,out=temp.Log_issues,pm=N,sound=N,relog=N,print=Y,to=,cc=,logdef=LOG,dirext=N,shadow=Y,abort=N,test=);
 
     ods excel close; 
+    
+
+/* Added AT analysis  */
+ods excel file="&toutpath./se_Abrahami_T2compiled_AT_&todaysdate..xlsx"
+options (
+Sheet_interval="NONE"
+embedded_titles="NO"
+embedded_footnotes="NO"
+);
+ods excel options(sheet_name="DPP4i_SU AT" sheet_interval="NOW");
+%analysis_Ab (exclude_ibd=N, exposure= dpp4i , comparator= su, ana_name=main, type= AT, weight= smrw, induction= 180, latency= 180 , ibd_def= ibd1, intime= filldate2, outtime='31Dec2022'd , outdata=AT , save=N ) ;
+
+ods excel options(sheet_name="DPP4i_TZD AT" sheet_interval="NOW");
+%analysis_Ab (exclude_ibd=N, exposure= dpp4i , comparator= tzd, ana_name=main, type= AT, weight= smrw, induction= 180, latency= 180 , ibd_def= ibd1, intime= filldate2, outtime='31Dec2022'd , outdata=AT , save=N ) ;
+    
+ods excel options(sheet_name="DPP4i_SGLT2i AT" sheet_interval="NOW");
+%analysis_Ab (exclude_ibd=N, exposure= dpp4i , comparator= sglt2i, ana_name=main, type= AT, weight= smrw, induction= 180, latency= 180 , ibd_def= ibd1, intime= filldate2, outtime='31Dec2022'd , outdata=AT , save=N ) ;
+
+ods excel options(sheet_name="se_DPP4i_SU AT" sheet_interval="NOW");
+%analysis_Ab (exclude_ibd=Y, exposure= dpp4i , comparator= su, ana_name=main, type= AT, weight= smrw, induction= 180, latency= 180 , ibd_def= ibd1, intime= filldate2, outtime='31Dec2022'd , outdata=AT , save=N ) ;
+
+ods excel options(sheet_name="se_DPP4i_TZD AT" sheet_interval="NOW");
+%analysis_Ab (exclude_ibd=Y, exposure= dpp4i , comparator= tzd, ana_name=main, type= AT, weight= smrw, induction= 180, latency= 180 , ibd_def= ibd1, intime= filldate2, outtime='31Dec2022'd , outdata=AT , save=N ) ;
+    
+ods excel options(sheet_name="se_DPP4i_SGLT2i AT" sheet_interval="NOW");
+%analysis_Ab (exclude_ibd=Y, exposure= dpp4i , comparator= sglt2i, ana_name=main, type= AT, weight= smrw, induction= 180, latency= 180 , ibd_def= ibd1, intime= filldate2, outtime='31Dec2022'd , outdata=AT , save=N ) ;
+
+ods excel options(sheet_name="Log_issues" sheet_interval="NOW");
+%CheckLog( ,ext=LOG,subdir=N,keyword=,exclude=,out=temp.Log_issues,pm=N,sound=N,relog=N,print=Y,to=,cc=,logdef=LOG,dirext=N,shadow=Y,abort=N,test=);
+
+ods excel close; 
 
 
 /* endregion //!SECTION */

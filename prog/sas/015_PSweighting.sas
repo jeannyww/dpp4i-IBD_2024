@@ -16,9 +16,9 @@ Input paths:
             libname temp  D:\Externe Projekte\UNC\wangje\data\temp
 Other details: CPRD-DPP4i project in collaboration with USB
 
-CHANGES: 2024-04-09 added for tablerowvarsi the comparator drugs for su_1yrlookback, TZD_1yrlookback, sglt2i_1yrlookback, dpp4i_1yrlookback
+CHANGES: 2024-04-09 added for tablerowvarsi the comparator drugs for su_1yrlookback, TZD_1yrlookback, sglt2i_1yrlookback, dpp4i_1yrlookback to lines 342-343
 Date: 2024-04-09 
-Notes: revised for Tian and Virginia to run for new table 1 
+Notes: revised for Tian and Virginia to run for new table 1 , line 343 
 ***************************************/
 options nofmterr pageno=1 fullstimer stimer stimefmt=z compress=yes ;
 options macrogen symbolgen mlogic mprint mcompile mcompilenote=all; option MAUTOSOURCE;
@@ -339,7 +339,8 @@ PS weighting with Abrahami covariates:
 *  %let tablerowvars= &tablerowvarsi;
 
 %LET tablerowvarsi =   age  sex entry_year   bmi_cat2 alcohol_cat smoke_cat hba1c_Cat2  
-nephr_ever nerop_ever dret_ever mi_ever stroke_ever PerArtD_ever /* duration_metformin */ dpp4i_1yrlookback su_1yrlookback TZD_1yrlookback sglt2i_1yrlookback
+nephr_ever nerop_ever dret_ever mi_ever stroke_ever PerArtD_ever /* duration_metformin */
+oAntGLP_1yrlookback dpp4i_1yrlookback su_1yrlookback TZD_1yrlookback sglt2i_1yrlookback
 bigua_ever SU_ever TZD_ever insulin_ever /* other oad  */ dpp4i_ever sglt2i_ever prand_ever agluco_ever OAntGLP_ever    /* other */ ass_ever allnsa_ever hrtopp_ever estr_ever gesta_ever pill_ever /* Autoimmune */psorp_ever vasc_ever RhArth_Ever SjSy_Ever sLup_ever /* other drugs */num_nondmdrugs1yr num_nondmdrugs1yr_cat;
 
 

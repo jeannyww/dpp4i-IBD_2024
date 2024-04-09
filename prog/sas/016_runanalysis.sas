@@ -16,8 +16,8 @@ Input paths:
             libname temp  D:\Externe Projekte\UNC\wangje\data\temp
 Other details: CPRD-DPP4i project in collaboration with USB
 
-CHANGES:
-Date: see git 
+CHANGES: Page 441 added template code for sensitivity analyses 
+Date: 2024-04-09
 Notes: etc
 ***************************************/
 options nofmterr pageno=1 fullstimer stimer stimefmt=z compress=yes ;
@@ -108,6 +108,12 @@ data dsn; set a.ps_&exposure._&comparator;
         format enddate date9.; LABEL enddate="Date min of (&ibd_def._dt, switchAugmentdate, drug discontinuation, death_dt, endstudy_dt, dbexit_dt, enddt (end enroll), LastColl_Dt)";
         %end; 
 
+    /* As Treated and censoring for badrx (sensitivity analysis 6 "6)	We will additionally censor patients when they receive medications that could potentially induce IBD progression [19] (Appendix 10). ") */
+    %if %upcase(&type) eq ATB %then %do;
+        enddate= min(endofdrug, switchAugmentDate, &ibd_def._dt, &outtime, discontDate, death_dt, endstudy_dt, dbexit_dt, enddt, LastColl_Dt, badrx_dt);
+        format enddate date9.; label enddate="Date min of (&ibd_def._dt, switchAugmentDate, drug discontinuation, death_dt, endstudy_dt, dbexit_dt, enddt (end enroll), LastColl_Dt, badrx_dt)";
+        %end;
+ 
     /* Initial Treatment */
     %else %if %upcase(&type) eq IT %then %do;
         enddate= min(&ibd_def._dt, enddt, endstudy_dt,&outtime, death_dt, dbexit_dt,  LastColl_Dt);
@@ -429,6 +435,44 @@ run;
 %mend analysis;
 
 /* endregion //!SECTION */
+
+
+/*===================================*\
+//SECTION - Example of Macro Execution, edit this/ copy and paste and replace the macro parameters  to produce some of the sensitivity analyses, more code does need to be written for UC/CD outcomes but can be incorporated as a next step 
+\*===================================*/
+/* region */
+
+/* ie, if this is the 'main' analysis */
+%analysis ( exposure= dpp4i , comparator= su, ana_name=main, type= IT, weight= smrw, induction= 180, latency= 180 , ibd_def= ibd1, intime= filldate2, outtime='31Dec2022'd , outdata=IT , save=N ) ;
+/* You can substitute ibd_def for ibd1, ibd2, ibd3, ibd4, ibd5 , see the definitions in datadictionary and the creation of the variables from lines 60 in 011_cleandata.sas  */
+
+/* 1)	We will repeat the analyses changing latency and carry-over periods from 180 days to 0 days, 90 days, and 365 days. We will similarly assess our secondary outcomes, CD and UC, respectively, using different latency and carry-over periods (0 day, 90 days and 365 days).  */
+%analysis ( exposure= dpp4i , comparator= su, ana_name=S1, type= IT, weight= smrw, induction= 0, latency= 0 , ibd_def= ibd1, intime= filldate2, outtime='31Dec2022'd , outdata=IT , save=N ) ;
+
+/* 2)	We will perform an analysis based on initial treatment (IT) (Appendix 7), ignoring censoring for treatment discontinuation and changes during follow-up.-- done */
+
+/* 3)	We will require only one study drug prescription in the exposure definition, and use the first prescription as the cohort entry date,  */
+%analysis ( exposure= dpp4i , comparator= su, ana_name=main, type= IT, weight= smrw, induction= 180, latency= 180 , ibd_def= ibd1, intime= time0, outtime='31Dec2022'd , outdata=IT , save=N ) ;
+
+/* 4)	For Aim 1, to assess whether DPP4i is associated with IBD risk, we will use a more rigorous outcome definition in sensitivity analysis.  */
+/* 5)	We will modify our outcome in 4) to remove the biopsy requirement, as some colonoscopy codes already include biopsy */
+*substitute for IBD2-5; 
+
+%analysis ( exposure= dpp4i , comparator= su, ana_name=main, type= IT, weight= smrw, induction= 180, latency= 180 , ibd_def= ibd2, intime= filldate2, outtime='31Dec2022'd , outdata=IT , save=N ) ;
+    
+/* 6)	We will additionally censor patients when they receive medications that could potentially induce IBD progression [19] (Appendix 10). -- make type == ATB  */
+
+%analysis ( exposure= dpp4i , comparator= su, ana_name=main, type= ATB, weight= smrw, induction= 180, latency= 180 , ibd_def= ibd1, intime= filldate2, outtime='31Dec2022'd , outdata=IT , save=N ) ;
+
+
+/* endregion //!SECTION */
+
+/*===================================*\
+//SECTION - Execute the macro
+\*===================================*/
+/* region */
+
+
 ods excel file="&toutpath./Main_T2_compiled_&todaysdate..xlsx"
 options (
 Sheet_interval="NONE"
@@ -454,3 +498,5 @@ embedded_footnotes="NO"
 
     ods excel close; 
 
+
+/* endregion //!SECTION */

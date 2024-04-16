@@ -18,7 +18,7 @@ Other details: CPRD-DPP4i project in collaboration with USB
 
 CHANGES:2024-04-09- ADDED AT ANALYSIS SEE LINE 257 
 Date: 2024-01-21
-Notes: see git @jeannyww
+Notes: see git 
 ***************************************/
 options nofmterr pageno=1 fullstimer stimer stimefmt=z compress=yes ;
 options macrogen  nomlogic nomprint  ; option MAUTOSOURCE;

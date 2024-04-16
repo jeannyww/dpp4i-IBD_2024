@@ -16,9 +16,15 @@ Input paths:
             libname temp  D:\Externe Projekte\UNC\wangje\data\temp
 Other details: CPRD-DPP4i project in collaboration with USB
 
-CHANGES: Page 441 added template code for sensitivity analyses 
 Date: 2024-04-09
-Notes: etc
+CHANGES: line 441 added template code for sensitivity analyses 
+
+Date: 2024-04-16
+CHANGES: To Resolve the following error "different sample size of AT and IT analysis in ACNU cohort. Sample size should be the same, inclusion/exclusion criteria should not be based on future events during follow-up (like "enddate").""
+
+-	(latency pd between dz onset and dz dx)
+-	Induction (taking drug to dz onset) 
+ 
 ***************************************/
 options nofmterr pageno=1 fullstimer stimer stimefmt=z compress=yes ;
 options macrogen symbolgen mlogic mprint mcompile mcompilenote=all; option MAUTOSOURCE;
@@ -102,24 +108,26 @@ data dsn; set a.ps_&exposure._&comparator;
     *end of drug in the drug class; 
         endofdrug=rxchange+&latency;
 
-    /* As Treated */ 
-    %if %upcase(&type) eq AT %then %do;  
-        enddate=min(endofdrug,switchAugmentdate , &ibd_def._dt,&outtime, discontDate,death_dt, endstudy_dt, dbexit_dt, enddt, LastColl_Dt ); /* AT exit date and AT exit_reason   */
-        format enddate date9.; LABEL enddate="Date min of (&ibd_def._dt, switchAugmentdate, drug discontinuation, death_dt, endstudy_dt, dbexit_dt, enddt (end enroll), LastColl_Dt)";
-        %end; 
-
-    /* As Treated and censoring for badrx (sensitivity analysis 6 "6)	We will additionally censor patients when they receive medications that could potentially induce IBD progression [19] (Appendix 10). ") */
-    %if %upcase(&type) eq ATB %then %do;
-        enddate= min(endofdrug, switchAugmentDate, &ibd_def._dt, &outtime, discontDate, death_dt, endstudy_dt, dbexit_dt, enddt, LastColl_Dt, badrx_dt);
-        format enddate date9.; label enddate="Date min of (&ibd_def._dt, switchAugmentDate, drug discontinuation, death_dt, endstudy_dt, dbexit_dt, enddt (end enroll), LastColl_Dt, badrx_dt)";
-        %end;
- 
     /* Initial Treatment */
     %else %if %upcase(&type) eq IT %then %do;
         enddate= min(&ibd_def._dt, enddt, endstudy_dt,&outtime, death_dt, dbexit_dt,  LastColl_Dt);
         format enddate date9. ; label enddate ="Date min of (&ibd_def._dt, enddt, endstudy_dt,&outtime, death_dt, dbexit_dt,  LastColl_Dt)";
         *"Date min of (&ibd_def._dt,death_dt, endstudy_dt, dbexit_dt, LastColl_Dt)";
         %end;
+
+    /* As Treated */ 
+    %if %upcase(&type) eq AT %then %do;  
+        enddate=min(endofdrug , &ibd_def._dt,&outtime, discontDate,death_dt, endstudy_dt, dbexit_dt, enddt, LastColl_Dt ); /* AT exit date and AT exit_reason   */
+        format enddate date9.; LABEL enddate="Date min of (&ibd_def._dt, drug discontinuation, death_dt, endstudy_dt, dbexit_dt, enddt (end enroll), LastColl_Dt)";
+        %end; 
+
+    /* As Treated and censoring for badrx (sensitivity analysis 6 "6)	We will additionally censor patients when they receive medications that could potentially induce IBD progression [19] (Appendix 10). ") 
+    we allow events to occur 180 days after stopping medication */
+    %if %upcase(&type) eq ATB %then %do;
+        enddate= min(endofdrug, &ibd_def._dt, &outtime, discontDate, death_dt, endstudy_dt, dbexit_dt, enddt, LastColl_Dt, (badrx_dt+ &latency) );
+        format enddate date9.; label enddate="Date min of (&ibd_def._dt, drug discontinuation, death_dt, endstudy_dt, dbexit_dt, enddt (end enroll), LastColl_Dt, badrx_dt)";
+        %end;
+ 
 
     /* Either  */
     %if %upcase(&type) # AT, IT %then %do;

@@ -28,12 +28,14 @@ CHANGES: To Resolve the following error "different sample size of AT and IT anal
 
 Date: 2024-05-01
 CHANGES: checked 3yearsout, lines 89-92
- 
+
+Date: 2024-05-22
+CHANGES: using new 1yrlb dataset, run during Virginia office hours today  
 ***************************************/
 options nofmterr pageno=1 fullstimer stimer stimefmt=z compress=yes ;
 options macrogen symbolgen mlogic mprint mcompile mcompilenote=all; option MAUTOSOURCE;
 option SASAUTOS=(SASAUTOS "D:\Externe Projekte\UNC\wangje\prog\sas\macros");
-%setup(programName=016_runanalysis, savelog=N, dataset=tmp);
+%setup(programName=16_runanalysis, savelog=Y, dataset=tmp);
 
 proc template; define style mystyle;
     parent=styles.sasweb;
@@ -81,8 +83,8 @@ outtime =  ,      *time which analysis fu ends, ie for AT: '31Dec2017'd, for ITT
 \*===================================*/
 /* region */
 
-data dsn; set a.ps_&exposure._&comparator;
-    drop Alc_P_bc Alc_P_bl colo_bc colo_bl IBD_P_bc IBD_P_bl DivCol_I_bc DivCol_I_bl DivCol_P_bc DivCol_P_bl PCOS_bc PCOS_bl DiabGest_bc DiabGest_bl IBD_I_bc IBD_I_bl asthma_bc asthma_bl copd_bc copd_bl arrhyth_bc arrhyth_bl chf_bc chf_bl ihd_bc ihd_bl mi_bc mi_bl hyperten_bc hyperten_bl stroke_bc stroke_bl hyperlip_bc hyperlip_bl diab_bc diab_bl dvt_bc dvt_bl pe_bc pe_bl gout_bc gout_bl pthyro_bc pthyro_bl mthyro_bc mthyro_bl depres_bc depres_bl affect_bc affect_bl suic_bc suic_bl sleep_bc sleep_bl schizo_bc schizo_bl epilep_bc epilep_bl renal_bc renal_bl GIulcer_bc GIulcer_bl RhArth_bc RhArth_bl alrhi_bc alrhi_bl glauco_bc glauco_bl migra_bc migra_bl sepsis_bc sepsis_bl pneumo_bc pneumo_bl nephr_bc nephr_bl nerop_bc nerop_bl dret_bc dret_bl psorI_bc psorI_bl psorP_bc psorP_bl vasc_bc vasc_bl SjSy_bc SjSy_bl sLup_bc sLup_bl PerArtD_bc PerArtD_bl AbdPain_bc AbdPain_bl Diarr_bc Diarr_bl BkStool_bc BkStool_bl Crohns_bc Crohns_bl Ucolitis_bc Ucolitis_bl Icomitis_bc Icomitis_bl Gastent_bc Gastent_bl ColIle_bc ColIle_bl Sigmo_bc Sigmo_bl Biops_bc Biops_bl Ileo_bc Ileo_bl HBA1c_bc HBA1c_bl DPP4i_bc DPP4i_gc DPP4i_bl DPP4i_tot1yr SU_bc SU_gc SU_bl SU_tot1yr SGLT2i_bc SGLT2i_gc SGLT2i_bl SGLT2i_tot1yr TZD_bc TZD_gc TZD_bl TZD_tot1yr Insulin_bc Insulin_gc Insulin_bl Insulin_tot1yr bigua_bc bigua_gc bigua_bl bigua_tot1yr prand_bc prand_gc prand_bl prand_tot1yr agluco_bc agluco_gc agluco_bl agluco_tot1yr OAntGLP_bc OAntGLP_gc OAntGLP_bl OAntGLP_tot1yr AminoS_bc AminoS_gc AminoS_bl AminoS_tot1yr Mesal_bc Mesal_gc Mesal_bl Mesal_tot1yr Sulfas_bc Sulfas_gc Sulfas_bl Sulfas_tot1yr Olsala_bc Olsala_gc Olsala_bl Olsala_tot1yr Balsal_bc Balsal_gc Balsal_bl Balsal_tot1yr ace_bc ace_gc ace_bl ace_tot1yr arb_bc arb_gc arb_bl arb_tot1yr bb_bc bb_gc bb_bl bb_tot1yr ccb_bc ccb_gc ccb_bl ccb_tot1yr nitrat_bc nitrat_gc nitrat_bl nitrat_tot1yr coronar_bc coronar_gc coronar_bl coronar_tot1yr antiarr_bc antiarr_gc antiarr_bl antiarr_tot1yr thrombo_bc thrombo_gc thrombo_bl thrombo_tot1yr antivitk_bc antivitk_gc 
+data dsn; set a.PS_&exposure._&comparator._1yrlb;
+   * drop Alc_P_bc Alc_P_bl colo_bc colo_bl IBD_P_bc IBD_P_bl DivCol_I_bc DivCol_I_bl DivCol_P_bc DivCol_P_bl PCOS_bc PCOS_bl DiabGest_bc DiabGest_bl IBD_I_bc IBD_I_bl asthma_bc asthma_bl copd_bc copd_bl arrhyth_bc arrhyth_bl chf_bc chf_bl ihd_bc ihd_bl mi_bc mi_bl hyperten_bc hyperten_bl stroke_bc stroke_bl hyperlip_bc hyperlip_bl diab_bc diab_bl dvt_bc dvt_bl pe_bc pe_bl gout_bc gout_bl pthyro_bc pthyro_bl mthyro_bc mthyro_bl depres_bc depres_bl affect_bc affect_bl suic_bc suic_bl sleep_bc sleep_bl schizo_bc schizo_bl epilep_bc epilep_bl renal_bc renal_bl GIulcer_bc GIulcer_bl RhArth_bc RhArth_bl alrhi_bc alrhi_bl glauco_bc glauco_bl migra_bc migra_bl sepsis_bc sepsis_bl pneumo_bc pneumo_bl nephr_bc nephr_bl nerop_bc nerop_bl dret_bc dret_bl psorI_bc psorI_bl psorP_bc psorP_bl vasc_bc vasc_bl SjSy_bc SjSy_bl sLup_bc sLup_bl PerArtD_bc PerArtD_bl AbdPain_bc AbdPain_bl Diarr_bc Diarr_bl BkStool_bc BkStool_bl Crohns_bc Crohns_bl Ucolitis_bc Ucolitis_bl Icomitis_bc Icomitis_bl Gastent_bc Gastent_bl ColIle_bc ColIle_bl Sigmo_bc Sigmo_bl Biops_bc Biops_bl Ileo_bc Ileo_bl HBA1c_bc HBA1c_bl DPP4i_bc DPP4i_gc DPP4i_bl DPP4i_tot1yr SU_bc SU_gc SU_bl SU_tot1yr SGLT2i_bc SGLT2i_gc SGLT2i_bl SGLT2i_tot1yr TZD_bc TZD_gc TZD_bl TZD_tot1yr Insulin_bc Insulin_gc Insulin_bl Insulin_tot1yr bigua_bc bigua_gc bigua_bl bigua_tot1yr prand_bc prand_gc prand_bl prand_tot1yr agluco_bc agluco_gc agluco_bl agluco_tot1yr OAntGLP_bc OAntGLP_gc OAntGLP_bl OAntGLP_tot1yr AminoS_bc AminoS_gc AminoS_bl AminoS_tot1yr Mesal_bc Mesal_gc Mesal_bl Mesal_tot1yr Sulfas_bc Sulfas_gc Sulfas_bl Sulfas_tot1yr Olsala_bc Olsala_gc Olsala_bl Olsala_tot1yr Balsal_bc Balsal_gc Balsal_bl Balsal_tot1yr ace_bc ace_gc ace_bl ace_tot1yr arb_bc arb_gc arb_bl arb_tot1yr bb_bc bb_gc bb_bl bb_tot1yr ccb_bc ccb_gc ccb_bl ccb_tot1yr nitrat_bc nitrat_gc nitrat_bl nitrat_tot1yr coronar_bc coronar_gc coronar_bl coronar_tot1yr antiarr_bc antiarr_gc antiarr_bl antiarr_tot1yr thrombo_bc thrombo_gc thrombo_bl thrombo_tot1yr antivitk_bc antivitk_gc 
     antivitk_bl antivitk_tot1yr hepar_bc hepar_gc hepar_bl hepar_tot1yr stat_bc stat_gc stat_bl stat_tot1yr fib_bc fib_gc fib_bl fib_tot1yr lla_bc lla_gc lla_bl lla_tot1yr thiaz_bc thiaz_gc thiaz_bl thiaz_tot1yr loop_bc loop_gc loop_bl loop_tot1yr kspar_bc kspar_gc kspar_bl kspar_tot1yr diurcom_bc diurcom_gc diurcom_bl diurcom_tot1yr thiaantih_bc thiaantih_gc thiaantih_bl thiaantih_tot1yr diurall_bc diurall_gc diurall_bl diurall_tot1yr ass_bc ass_gc ass_bl ass_tot1yr asscvd_bc asscvd_gc asscvd_bl asscvd_tot1yr allnsa_bc allnsa_gc allnsa_bl allnsa_tot1yr 
     para_bc para_gc para_bl para_tot1yr bago_bc bago_gc bago_bl bago_tot1yr abago_bc abago_gc abago_bl abago_tot1yr opio_bc opio_gc opio_bl opio_tot1yr acho_bc acho_gc acho_bl acho_tot1yr sterinh_bc sterinh_gc sterinh_bl sterinh_tot1yr lra_bc lra_gc lra_bl lra_tot1yr xant_bc xant_gc xant_bl xant_tot1yr ahist_bc ahist_gc ahist_bl ahist_tot1yr ahistc_bc ahistc_gc ahistc_bl ahistc_tot1yr h2_bc h2_gc h2_bl h2_tot1yr ppi_bc ppi_gc ppi_bl ppi_tot1yr IBD_bc IBD_gc IBD_bl IBD_tot1yr thyro_bc thyro_gc thyro_bl thyro_tot1yr sterint_bc sterint_gc sterint_bl 
     sterint_tot1yr stersys_bc stersys_gc stersys_bl stersys_tot1yr stertop_bc stertop_gc stertop_bl stertop_tot1yr gesta_bc gesta_gc gesta_bl gesta_tot1yr pill_bc pill_gc pill_bl pill_tot1yr HRTopp_bc HRTopp_gc HRTopp_bl HRTopp_tot1yr estr_bc estr_gc estr_bl estr_tot1yr adem_bc adem_gc adem_bl adem_tot1yr apsy_bc apsy_gc apsy_bl apsy_tot1yr benzo_bc benzo_gc benzo_bl benzo_tot1yr hypno_bc hypno_gc hypno_bl hypno_tot1yr ssri_bc ssri_gc ssri_bl ssri_tot1yr li_bc li_gc li_bl li_tot1yr mao_bc mao_gc mao_bl mao_tot1yr oadep_bc oadep_gc oadep_bl 
@@ -107,7 +109,7 @@ data dsn; set a.ps_&exposure._&comparator;
 	format twoyear      date9.;
 	format threeyear    date9.;
 	format fouryear     date9.;
-
+*display fusion; 
     /* Coding in more time variables  */
     *rxchange: for switching one class from another class;
         rxchange=min(DiscontDate, enddt,  switchAugmentDate);
@@ -117,7 +119,7 @@ data dsn; set a.ps_&exposure._&comparator;
         endofdrug=rxchange+&latency;
 
     /* Initial Treatment */
-    %else %if %upcase(&type) eq IT %then %do;
+    %if %upcase(&type) eq IT %then %do;
         enddate= min(&ibd_def._dt, enddt, endstudy_dt,&outtime, death_dt, dbexit_dt,  LastColl_Dt);
         format enddate date9. ; label enddate ="Date min of (&ibd_def._dt, enddt, endstudy_dt,&outtime, death_dt, dbexit_dt,  LastColl_Dt)";
         *"Date min of (&ibd_def._dt,death_dt, endstudy_dt, dbexit_dt, LastColl_Dt)";
@@ -171,7 +173,7 @@ RUN;
 Update counts for exclusion
 \*=================*/
 PROC SQL noprint; 
-    create table tmp_counts as select * from temp.exclusions_015_&exposure._&comparator.;
+    create table tmp_counts as select * from temp.excl_015_&exposure._&comparator._1yrlb;
     select count(*) into : num_obs from tmp_counts;
     insert into tmp_counts
         set exclusion_num=&num_obs+1, 
@@ -205,7 +207,7 @@ proc sql noprint;
         full= (select count(*) from dsn where (time ne .));
     select * from tmp_counts;
 %if %upcase(&save) eq Y %then %do;
-    create table temp.exclusions_016_&exposure._&comparator._&type. as select * from tmp_counts;
+    create table temp.excl_016_&exposure._&comparator._1yr&type. as select * from tmp_counts;
     %end;
 quit;
 proc print data= tmp_counts; run;
@@ -337,27 +339,32 @@ Data &outdata;
     type="&ibd_def.";
     latency=&latency;
     induction=&induction;
+    n_switch=.;
+    IBD_event_switchers=.;  
+    IBD_events_censored=.;
+    IBD_hx_sum=.;
 run;
 Proc sort data=&outdata; 
     by descending &exposure; 
 run;
+
 Data tmpout1
     (keep=&exposure 
-    Nobs type nmiss
-    mediantime mediantimedu time_sum event_sum rate crudehr &weight.HR analysis induction latency exp unexp);
+        Nobs n_switch type nmiss
+        mediantime mediantimedu time_sum event_sum IBD_event_switchers IBD_events_censored IBD_hx_sum rate crudehr &weight.HR analysis induction latency exp unexp);
     set &outdata;
     exp="&exposure.";
     unexp="&comparator.";
     label event_Sum="No. of Event";
-    label time_Sum = "Person-year";
+    label time_Sum = "Person-year";    
 run;
 
 Data out_&exposure.v&comparator._&ana_name._&outdata.;
-    retain &exposure Nobs TYPE time_sum event_sum rate crudehr &weight.HR analysis induction latency exp unexp; 
-    set tmpout1;
-        
-    format event_sum best12.;
-    format Nobs COMMA12. event_sum COMMA12. time_sum COMMA12. ;
+        retain TYPE &exposure Nobs n_switch mediantime time_sum event_sum IBD_event_switchers IBD_events_censored IBD_hx_sum  rate crudehr &weight.HR analysis induction latency exp unexp; 
+        set tmpout1;
+            
+        format event_sum best12.;
+        format Nobs COMMA12. event_sum COMMA12. time_sum COMMA12. ibd_event_switchers COMMA12. IBD_events_censored COMMA12. IBD_hx_sum COMMA12. n_switch COMMA12. ;
 run;
 
  /* endregion //!SECTION */
@@ -459,32 +466,32 @@ run;
 /* region */
 
 
-%analysis ( exposure= dpp4i , comparator= su, ana_name=main, type= IT, weight= smrw, induction= 180, latency= 180 , ibd_def= ibd1, intime= filldate2, outtime='31Dec2022'd , outdata=IT , save=N ) ;
-%analysis ( exposure= dpp4i , comparator= su, ana_name=main, type= IT, weight= smrw, induction= 180, latency= 180 , ibd_def= ibd1, intime= filldate2, outtime=threeyearout , outdata=IT , save=N ) ;
+*%analysis ( exposure= dpp4i , comparator= su, ana_name=main, type= IT, weight= smrw, induction= 180, latency= 180 , ibd_def= ibd1, intime= filldate2, outtime='31Dec2022'd , outdata=IT , save=N ) ;
+*%analysis ( exposure= dpp4i , comparator= su, ana_name=main, type= IT, weight= smrw, induction= 180, latency= 180 , ibd_def= ibd1, intime= filldate2, outtime=threeyearout , outdata=IT , save=N ) ;
 
 
 /* ie, if this is the 'main' analysis */
 
-%analysis ( exposure= dpp4i , comparator= su, ana_name=main, type= IT, weight= smrw, induction= 180, latency= 180 , ibd_def= ibd1, intime= filldate2, outtime='31Dec2022'd , outdata=IT , save=N ) ;
+*%analysis ( exposure= dpp4i , comparator= su, ana_name=main, type= IT, weight= smrw, induction= 180, latency= 180 , ibd_def= ibd1, intime= filldate2, outtime='31Dec2022'd , outdata=IT , save=N ) ;
 /* You can substitute ibd_def for ibd1, ibd2, ibd3, ibd4, ibd5 , see the definitions in datadictionary and the creation of the variables from lines 60 in 011_cleandata.sas  */
 
 /* 1)	We will repeat the analyses changing latency and carry-over periods from 180 days to 0 days, 90 days, and 365 days. We will similarly assess our secondary outcomes, CD and UC, respectively, using different latency and carry-over periods (0 day, 90 days and 365 days).  */
-%analysis ( exposure= dpp4i , comparator= su, ana_name=S1, type= IT, weight= smrw, induction= 0, latency= 0 , ibd_def= ibd1, intime= filldate2, outtime='31Dec2022'd , outdata=IT , save=N ) ;
+*%analysis ( exposure= dpp4i , comparator= su, ana_name=S1, type= IT, weight= smrw, induction= 0, latency= 0 , ibd_def= ibd1, intime= filldate2, outtime='31Dec2022'd , outdata=IT , save=N ) ;
 
 /* 2)	We will perform an analysis based on initial treatment (IT) (Appendix 7), ignoring censoring for treatment discontinuation and changes during follow-up.-- done */
 
 /* 3)	We will require only one study drug prescription in the exposure definition, and use the first prescription as the cohort entry date,  */
-%analysis ( exposure= dpp4i , comparator= su, ana_name=main, type= IT, weight= smrw, induction= 180, latency= 180 , ibd_def= ibd1, intime= time0, outtime='31Dec2022'd , outdata=IT , save=N ) ;
+*%analysis ( exposure= dpp4i , comparator= su, ana_name=main, type= IT, weight= smrw, induction= 180, latency= 180 , ibd_def= ibd1, intime= time0, outtime='31Dec2022'd , outdata=IT , save=N ) ;
 
 /* 4)	For Aim 1, to assess whether DPP4i is associated with IBD risk, we will use a more rigorous outcome definition in sensitivity analysis.  */
 /* 5)	We will modify our outcome in 4) to remove the biopsy requirement, as some colonoscopy codes already include biopsy */
 *substitute for IBD2-5; 
 
-%analysis ( exposure= dpp4i , comparator= su, ana_name=main, type= IT, weight= smrw, induction= 180, latency= 180 , ibd_def= ibd2, intime= filldate2, outtime='31Dec2022'd , outdata=IT , save=N ) ;
+*%analysis ( exposure= dpp4i , comparator= su, ana_name=main, type= IT, weight= smrw, induction= 180, latency= 180 , ibd_def= ibd2, intime= filldate2, outtime='31Dec2022'd , outdata=IT , save=N ) ;
     
 /* 6)	We will additionally censor patients when they receive medications that could potentially induce IBD progression [19] (Appendix 10). -- make type == ATB  */
 
-%analysis ( exposure= dpp4i , comparator= su, ana_name=main, type= ATB, weight= smrw, induction= 180, latency= 180 , ibd_def= ibd1, intime= filldate2, outtime='31Dec2022'd , outdata=IT , save=N ) ;
+*%analysis ( exposure= dpp4i , comparator= su, ana_name=main, type= ATB, weight= smrw, induction= 180, latency= 180 , ibd_def= ibd1, intime= filldate2, outtime='31Dec2022'd , outdata=IT , save=N ) ;
 
 
 /* endregion //!SECTION */
@@ -501,19 +508,39 @@ Sheet_interval="NONE"
 embedded_titles="NO"
 embedded_footnotes="NO"
 );
+
+/* threeyearout */
+
     ods excel options(sheet_name="DPP4i_SU IT" sheet_interval="NOW");
     %analysis ( exposure= dpp4i , comparator= su, ana_name=main, type= IT, weight= smrw, induction= 180, latency= 180 , ibd_def= ibd1, intime= filldate2, outtime='31Dec2022'd , outdata=IT , save=N ) ;
+    ods excel options(sheet_name="DPP4i_SU IT 3y" sheet_interval="NOW");
+    %analysis ( exposure= dpp4i , comparator= su, ana_name=main, type= IT, weight= smrw, induction= 180, latency= 180 , ibd_def= ibd1, intime= filldate2, outtime=threeyearout, outdata=IT , save=N ) ;
+    
     ods excel options(sheet_name="DPP4i_TZD IT" sheet_interval="NOW");
     %analysis ( exposure= dpp4i , comparator= tzd, ana_name=main, type= IT, weight= smrw, induction= 180, latency= 180 , ibd_def= ibd1, intime= filldate2, outtime='31Dec2022'd , outdata=IT , save=N ) ;
+    ods excel options(sheet_name="DPP4i_TZD IT 3y" sheet_interval="NOW");
+    %analysis ( exposure= dpp4i , comparator= tzd, ana_name=main, type= IT, weight= smrw, induction= 180, latency= 180 , ibd_def= ibd1, intime= filldate2, outtime=threeyearout, outdata=IT , save=N ) ;    
+    
     ods excel options(sheet_name="DPP4i_SGLT2i IT" sheet_interval="NOW");
     %analysis ( exposure= dpp4i , comparator= sglt2i, ana_name=main, type= IT, weight= smrw, induction= 180, latency= 180 , ibd_def= ibd1, intime= filldate2, outtime='31Dec2022'd , outdata=IT , save=N ) ;
+    ods excel options(sheet_name="DPP4i_SGLT2i IT 3y" sheet_interval="NOW");
+    %analysis ( exposure= dpp4i , comparator= sglt2i, ana_name=main, type= IT, weight= smrw, induction= 180, latency= 180 , ibd_def= ibd1, intime= filldate2, outtime=threeyearout, outdata=IT , save=N ) ;
     
     ods excel options(sheet_name="DPP4i_SU AT" sheet_interval="NOW");
     %analysis ( exposure= dpp4i , comparator= su, ana_name=main, type= AT, weight= smrw, induction= 180, latency= 180 , ibd_def= ibd1, intime= filldate2, outtime='31Dec2022'd , outdata=AT , save=N ) ;
+    ods excel options(sheet_name="DPP4i_SU AT 3y" sheet_interval="NOW");
+    %analysis ( exposure= dpp4i , comparator= su, ana_name=main, type= AT, weight= smrw, induction= 180, latency= 180 , ibd_def= ibd1, intime= filldate2, outtime=threeyearout, outdata=AT , save=N ) ;
+    
     ods excel options(sheet_name="DPP4i_TZD AT" sheet_interval="NOW");
     %analysis ( exposure= dpp4i , comparator= tzd, ana_name=main, type= AT, weight= smrw, induction= 180, latency= 180 , ibd_def= ibd1, intime= filldate2, outtime='31Dec2022'd , outdata=AT , save=N ) ;
+    ods excel options(sheet_name="DPP4i_TZD AT 3y" sheet_interval="NOW");
+    %analysis ( exposure= dpp4i , comparator= tzd, ana_name=main, type= AT, weight= smrw, induction= 180, latency= 180 , ibd_def= ibd1, intime= filldate2, outtime=threeyearout, outdata=AT , save=N ) ;
+    
     ods excel options(sheet_name="DPP4i_SGLT2i AT" sheet_interval="NOW");
     %analysis ( exposure= dpp4i , comparator= sglt2i, ana_name=main, type= AT, weight= smrw, induction= 180, latency= 180 , ibd_def= ibd1, intime= filldate2, outtime='31Dec2022'd , outdata=AT , save=N ) ;
+    ods excel options(sheet_name="DPP4i_SGLT2i AT 3y" sheet_interval="NOW");
+    %analysis ( exposure= dpp4i , comparator= sglt2i, ana_name=main, type= AT, weight= smrw, induction= 180, latency= 180 , ibd_def= ibd1, intime= filldate2, outtime=threeyearout, outdata=AT , save=N ) ;
+    
     ods excel options(sheet_name="Log_issues" sheet_interval="NOW");
 
     %CheckLog( ,ext=LOG,subdir=N,keyword=,exclude=,out=temp.Log_issues,pm=N,sound=N,relog=N,print=Y,to=,cc=,logdef=LOG,dirext=N,shadow=Y,abort=N,test=);

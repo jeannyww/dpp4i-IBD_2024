@@ -315,6 +315,94 @@ select count(unique id) as n from temp.&drug._demog; quit;
 %mend;
 %let druglist= dpp4i su  tzd sglt2i;
 %get_demog( druglist= &druglist. );
+
+/* Updated getdemog that runs faster from VP; 042320214 */
+%macro get_demog(drugList);
+
+      %LET N= %SYSFUNC(countw(&drugList));
+
+      %DO i=1 %TO &N;
+
+            %LET drug = %SCAN(&drugList,&i);
+
+            proc sql;
+
+                  create table der.&drug._bl as select distinct * , time0-history as db_entry_dt format=date9.
+
+                        from raw.&drug._trtmt(drop=rxdate_tmp gemscript BCSDP rx_dayssupply DPP4i SU SGLT2i TZD rxdate);
+
+            quit;
+
+      %END;
+
+%mend;
+
+%get_demog(dpp4i su tzd sglt2i)
+/* end */
+
+/* endregion //!SECTION */
+
+/*===================================*\
+//SECTION - Geting all Rx filles regardless of the cohort one is in -- added from VP who wrote it.
+\*===================================*/
+/* region */
+%macro all_rx(drugList=dpp4i su tzd sglt2i);
+
+      %LET N=%SYSFUNC(countw(&drugList));
+
+      %DO i=1 %TO &N; %LET drug&i = %SCAN(&drugList,&i); %END;
+
+ 
+
+      data all_rx; set %DO i=1 %TO &N; raw.&&drug&i.._trtmt(keep=id rxdate rx_dayssupply &drugList) %END;; run;
+
+      proc sql;
+
+            create tabels all_rx_daily as select distinct id, rxdate,
+
+                  %DO i=1 %TO &N; sum(case when &&drug&i=1 then rx_dayssupply else 0 end) as days_&&drug&i %IF &i<&N %THEN ,; %END;
+
+            from all_rx
+
+            group by id, rxdate
+
+            order by id, rxdate;
+
+      quit;
+
+%mend;
+
+%all_rx()
+
+ 
+
+ 
+
+options nosymbolgen nomlogic;
+
+%macro split_rx(drugList=dpp4i su tzd sglt2i);
+
+      %LET N=%SYSFUNC(countw(&drugList));
+
+      %DO i=1 %TO &N; %LET drug&i = %SCAN(&drugList,&i); %END;
+
+ 
+
+      data %DO i=1 %TO &N; der.&&drug&i.._rx(rename=(days_&&drug&i=days) keep=id rxdate days_&&drug&i) %END;;
+
+            set all_rx_daily;
+
+            %DO i=1 %TO &N; if days_&&drug&i>0 then output der.&&drug&i.._rx; %END;
+
+      run;
+
+%mend;
+
+%split_rx()
+
+
+/* Re the deicsion in january where we excluded everyone in the 1 year lookback window not in all years prior.
+*/
 /* endregion //!SECTION */
 
 

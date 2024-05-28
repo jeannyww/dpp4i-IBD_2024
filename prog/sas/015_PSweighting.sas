@@ -345,7 +345,7 @@ bigua_ever SU_ever TZD_ever insulin_ever /* other oad  */ dpp4i_ever sglt2i_ever
 
 
 %LET interactions =     /* add interaction */ ;
-%LET basevars =  age|age  sex entry_year   bmi_cat2 alcohol_cat smoke_cat hba1c_Cat2  nephr_ever nerop_ever dret_ever mi_ever stroke_ever PerArtD_ever bigua_ever insulin_ever prand_ever agluco_ever OAntGLP_ever ass_ever allnsa_ever hrtopp_ever estr_ever gesta_ever pill_ever psorp_ever vasc_ever RhArth_Ever SjSy_Ever sLup_ever num_nondmdrugs1yr ;
+%LET basevars =  age|age  sex entry_year   bmi_cat2 alcohol_cat smoke_cat hba1c_Cat2  nephr_1yrlookback nerop_1yrlookback dret_1yrlookback mi_1yrlookback stroke_1yrlookback PerArtD_1yrlookback bigua_1yrlookback insulin_1yrlookback prand_1yrlookback agluco_1yrlookback OAntGLP_1yrlookback ass_1yrlookback allnsa_1yrlookback hrtopp_1yrlookback estr_1yrlookback gesta_1yrlookback pill_1yrlookback psorp_1yrlookback vasc_1yrlookback RhArth_1yrlookback SjSy_1yrlookback sLup_1yrlookback num_nondmdrugs1yr ;
 %let basemodelvars= &basevars. &interactions. ;
 %let tablerowvars= &tablerowvarsi;
 

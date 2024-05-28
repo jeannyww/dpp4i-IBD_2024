@@ -28,6 +28,7 @@ Date: 2024-05-01
 Notes: Checked 3yearsout for analysis, lines 993-996 
 
 Date: 2024-05-22
+Notes: Line 353 changed for inclusion of only _1yrlookback
 
 ***************************************/
 options nofmterr pageno=1 fullstimer stimer stimefmt=z compress=yes ;
@@ -351,10 +352,10 @@ QUIT;
         *  label duration_metformin="Proxy for duration of treated DM: Days between first date of metformin rx and (excl) cohort entry date";
 
         /* *NOTE - 2024-01-22 identified bug where prevalent users were actually included. this is wrong and is fixed by overwriting the excludeflag_prevalentuser */
-        if &exposure. eq 1 then excludeflag_prevalentuser =max(&comparator._ever); 
-        if &exposure. eq 0 then excludeflag_prevalentuser =max(&exposure._ever);
-        *if &exposure. eq 1 then excludeflag_prevalentuser =max(&comparator._tot1yr ne . and &comparator._tot1yr>0);
-        *if &exposure. eq 0 then excludeflag_prevalentuser =max(&exposure._tot1yr ne . and &exposure._tot1yr>0);
+        *if &exposure. eq 1 then excludeflag_prevalentuser =max(&comparator._ever); 
+        *if &exposure. eq 0 then excludeflag_prevalentuser =max(&exposure._ever);
+        if &exposure. eq 1 then excludeflag_prevalentuser =max(&comparator._tot1yr ne . and &comparator._tot1yr>0);
+        if &exposure. eq 0 then excludeflag_prevalentuser =max(&exposure._tot1yr ne . and &exposure._tot1yr>0);
         label excludeflag_prevalentuser ='EXCLUSION FLAG: prevalent user of comparator drug based on ever/never definition';
         /* formats  */    
         format sex $sexf. alcohol_cat $statusf. smoke $statusf. hba1c_cat  hba1cf. bmi_cat bmif.;
@@ -1346,7 +1347,7 @@ data IBD_events_censored (rename=(sum=IBD_events_censored));
         label time_Sum = "Person-year";
     run;
     Data out_&exposure.v&comparator._&ana_name._&outdata.;
-        retain TYPE &exposure Nobs n_switch  time_sum event_sum IBD_event_switchers IBD_events_censored IBD_hx_sum  rate crudehr &weight.HR analysis induction latency exp unexp; 
+        retain TYPE &exposure Nobs n_switch mediantime time_sum event_sum IBD_event_switchers IBD_events_censored IBD_hx_sum  rate crudehr &weight.HR analysis induction latency exp unexp; 
         set tmpout1;
             
         format event_sum best12.;

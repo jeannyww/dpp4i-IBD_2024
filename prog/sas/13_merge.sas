@@ -24,7 +24,7 @@ options nofmterr pageno=1 fullstimer stimer stimefmt=z compress=yes ;
 options macrogen symbolgen mlogic mprint mcompile mcompilenote=all; option MAUTOSOURCE;
 
 option SASAUTOS=(SASAUTOS "D:\Externe Projekte\UNC\wangje\prog\sas\macros");
-%setup(programName=013_merge, savelog=N, dataset=temp);
+%setup(programName=013_merge, savelog=Y, dataset=temp);
 
 
 /*===================================*\
@@ -213,7 +213,7 @@ proc print data=temp.exclusions_012_&exposure._&comparator.; run;
     label hba1ctime="HBA1c level/time (number of days between the last recording before the time0 and the time0)";
     label hba1cno="Number of HBA1c recordings within the last three years prior to the time0";
     label hba1cavg="Average HBA1c level within the last three years before the time0";
-    label history="Number of days of recorded history in the database prior to the time0 (the number of days between the first prescription in the patients’ profile and the time0, historical entries prior 1987 are ignored).";
+    label history="Number of days of recorded history in the database prior to the time0 (the number of days between the first prescription in the patients� profile and the time0, historical entries prior 1987 are ignored).";
     label GPyearDx="Practice visits last year based on diagnoses = number of practice visits in the 365 days immediately prior to the time0 (count only visits at separate dates)";
     label GPyearDxRx="Practice visits last year based on diagnoses and prescriptions = number of practice visits in the 365 days immediately prior to the time0 (count only visits at separate dates)";
     /* Baseline vars- crude  */
@@ -272,8 +272,8 @@ proc print data=temp.exclusions_012_&exposure._&comparator.; run;
         format sex $sexf. alcohol_cat $statusf. smoke $statusf. hba1c_cat  hba1cf. bmi_cat bmif.;
         /* *NOTE - 2024-01-22 identified bug where prevalent users were actually included. this is wrong and is fixed by overwriting the excludeflag_prevalentuser */
 
-        /* if &exposure. eq 1 then excludeflag_prevalentuser =max(&comparator._ever);  */
-        /* if &exposure. eq 0 then excludeflag_prevalentuser =max(&exposure._ever); */
+/*        if &exposure. eq 1 then excludeflag_prevalentuser =max(&comparator._ever); */
+/*        if &exposure. eq 0 then excludeflag_prevalentuser =max(&exposure._ever);*/
         if &exposure. eq 1 then excludeflag_prevalentuser =max(&comparator._tot1yr ne . and &comparator._tot1yr>0); 
         if &exposure. eq 0 then excludeflag_prevalentuser =max(&exposure._tot1yr ne . and &exposure._tot1yr>0);
 
@@ -281,9 +281,9 @@ proc print data=temp.exclusions_012_&exposure._&comparator.; run;
     run;
     /* If save=y then save to temp library for retreival later  */
     %if &save=Y %then %do; 
-    data temp.allmerged_&exposure._&comparator.;
+    data temp.allmerged_&exposure._&comparator._1yrlb;
     set tmp1;RUN;
-    data temp.exclusions_013_&exposure._&comparator.;
+    data temp.excl_013_&exposure._&comparator._1yrlb;
     set tmp_counts;RUN;
     %end;
 %end;
@@ -302,25 +302,25 @@ proc print data=temp.exclusions_012_&exposure._&comparator.; run;
 %mergeall(exposure=dpp4i, comparatorlist=&comparatorlist., primaryGraceP=90, washoutp=365, save=Y);
 
 /* getting a preliminary proc contents from which to draw analysis dataset from */
-ods excel file="&toutpath./Merged_full_contentsandcounts.xlsx"
+ods excel file="&toutpath./Merged_full_contentsandcounts_1yrlb.xlsx"
 options (
     Sheet_interval="PROC" /* PROC | TABLE | NONE */
     embedded_titles="NO"
     embedded_footnotes="NO"
 );
 ods excel options(sheet_name="dpp4i_su contents" sheet_interval="NOW");
-proc contents data= temp.allmerged_dpp4i_su varnum; run;
+proc contents data= temp.allmerged_dpp4i_su_1yrlb varnum; run;
 ods excel options(sheet_name="dpp4i_su counts" sheet_interval="NOW");
-proc print data=temp.exclusions_013_dpp4i_su; run;
+proc print data=temp.excl_013_dpp4i_su_1yrlb; run;
 ods excel options(sheet_name="dpp4i_tzd contents" sheet_interval="NOW");
-proc contents data= temp.allmerged_dpp4i_tzd varnum; run;
+proc contents data= temp.allmerged_dpp4i_tzd_1yrlb varnum; run;
 ods excel options(sheet_name="dpp4i_tzd counts" sheet_interval="NOW");
-proc print data=temp.exclusions_013_dpp4i_tzd; run;
+proc print data=temp.excl_013_dpp4i_tzd_1yrlb; run;
 ods text="NOTE: no exclusions yet made for heart failure";
 ods excel options(sheet_name="dpp4i_sglt2i contents" sheet_interval="NOW");
-proc contents data= temp.allmerged_dpp4i_sglt2i varnum; run;
+proc contents data= temp.allmerged_dpp4i_sglt2i_1yrlb varnum; run;
 ods excel options(sheet_name="dpp4i_sglt2i counts" sheet_interval="NOW");
-proc print data= temp.exclusions_013_dpp4i_sglt2i; run;
+proc print data= temp.excl_013_dpp4i_sglt2i_1yrlb; run;
 ods text="NOTE: no exclusions yet made for year 2012 onwards";
 ods excel close;
 

@@ -681,7 +681,6 @@ data tmp2; set tmp2; where delete_IBD ne 1;RUN;
 
 /* endregion //!SECTION */
 
-
 /*===================================*\
 //SECTION - ## 5. PS weighting adapted from 015_PSweighting.sas
 \*===================================*/
@@ -691,32 +690,6 @@ data tmp2; set tmp2; where delete_IBD ne 1;RUN;
     data tmp1;
         set a.Abrahami_allmerged_&exposure._&comparator.;
     RUN;
-
-    /*=================*\
-    Table 1 untrimmed (appendix) - added 6/5/2024
-    \*=================*/
-    proc format; value &exposure. 0="&comparator." 1="&exposure."; run;
-    proc datasets lib=work nolist nodetails; modify tmp1; 
-        format &exposure. &exposure..  sex $sexf.  alcohol_cat $statusf. smoke_cat $statusf. hba1c_cat2  hba1cf. bmi_cat bmif.;
-        run;
-    %LET wgtvar=;
-    %let ds = tmp1 ;
-    %let colVar = &exposure.;
-    %let rowVars = &tablerowvars. ;
-    %LET outname = ;*Table1_Abrahami_Untrimmed_&exposure._&comparator._&todaysdate.; 
-    options orientation=landscape nodate nonumber nocenter;
-    %table1(inds= &ds, colVar= &colVar, rowVars= &rowVars, wgtVar= , maxLevels=16, outfile=&outname, title=&outname, cellsize=5);
-
-    data tab1_untrimmed_&comparator.; 
-        set final; run;
-    proc datasets lib=work nolist nodetails; delete final; run; quit;
-
-    ods escapechar='~' ;
-    options orientation=landscape nodate nonumber nocenter;
-    ods rtf file="&toutPath./Abrahami_Table1_Untrimmed_&exposure._&comparator._&todaysdate..rtf";
-    proc print data=tab1_untrimmed_&comparator. noobs label; var row &exposure &comparator sdiff; run;
-    ods rtf close;
-
 
     /*=================*\
     PS weighting
@@ -1009,7 +982,7 @@ data tmp2; set tmp2; where delete_IBD ne 1;RUN;
     \*===================================*/
         %if &exclude_ibd. eq Y %then %do;
             data dsn; set a.Abrahami_PS_&exposure._&comparator; where IBD_ever ne 1;RUN; 
-        %end;
+        %end;3
         %else %if &exclude_ibd. eq N %then %do;
             data dsn; set a.Abrahami_PS_&exposure._&comparator; RUN;
         %end;

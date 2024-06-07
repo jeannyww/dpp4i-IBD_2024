@@ -26,7 +26,7 @@ Notes: Remove AT analysis now
 options nofmterr pageno=1 fullstimer stimer stimefmt=z compress=yes ;
 options macrogen  nomlogic nomprint  ; option MAUTOSOURCE;
 option SASAUTOS=(SASAUTOS "D:\Externe Projekte\UNC\wangje\prog\sas\macros");
-%setup(programName=017_mimickAbrahami.sas, savelog=Y, dataset=dataname);
+%setup(programName=017_mimickAbrahami.sas, savelog=N, dataset=dataname);
 
 * 1. Loads into the work library macros, global variables, specific to the Analysis a la Abrahami, not to be utilized for main analysis ACNU cohorts;
 %include "D:\Externe Projekte\UNC\wangje\prog\sas\17_dependencies.sas";
@@ -35,9 +35,9 @@ option SASAUTOS=(SASAUTOS "D:\Externe Projekte\UNC\wangje\prog\sas\macros");
 //SECTION - 2. Get cohorts a la Abrahami, adapted from 012_createcohorts.sas
 \*===================================*/
 
-%LET exposure = dpp4i;
-%LET comparatorlist = su tzd sglt2i;
-%getCohort_Ab (exposure=&exposure.,comparatorlist= &comparatorlist.,washoutp= 365, save= Y);
+*%LET exposure = dpp4i;
+*%LET comparatorlist = su tzd sglt2i;
+*%getCohort_Ab (exposure=&exposure.,comparatorlist= &comparatorlist.,washoutp= 365, save= Y);
 
 /* endregion //!SECTION */
 
@@ -45,8 +45,8 @@ option SASAUTOS=(SASAUTOS "D:\Externe Projekte\UNC\wangje\prog\sas\macros");
 //SECTION - 3. Merge cohorts a la Abrahami, adapted from 013_merge.sas
 \*===================================*/
 /* region */
-%LET comparatorlist = su tzd sglt2i;
-%mergeall_Ab(exposure=dpp4i, comparatorlist=&comparatorlist., primaryGraceP=90, washoutp=365, save=Y);
+*%LET comparatorlist = su tzd sglt2i;
+*%mergeall_Ab(exposure=dpp4i, comparatorlist=&comparatorlist., primaryGraceP=90, washoutp=365, save=Y);
 
 /* endregion //!SECTION */
 
@@ -111,7 +111,6 @@ tablerowvars= &tablerowvarsi,
 refyear = 2015, 
 save= Y);
 
-
 %LET addedDPP4ivTZD = oAntGLP_1yrlookback sglt2i_1yrlookback su_1yrlookback chf_ever;
 %psweighting_Ab(exposure=dpp4i,
 comparator=TZD, 
@@ -148,7 +147,7 @@ ods excel file="&toutpath./Abrahami_T1_compiled_&todaysdate..xlsx"
     );
     *dpp4i vs su;
 ods excel options(sheet_name="DPP4i_SU"  sheet_interval="NOW");
-    proc print data=table1_dpp4ivSU noobs label; var row dpp4i_pretrim su_pretrim sdiff_pretrim dpp4i su sdiff su_wgt sdiff_wgt; run;
+    proc print data=table1_dpp4ivSU noobs label; var row dpp4i su sdiff su_wgt sdiff_wgt; run;
 ods excel options(sheet_name="DPP4i_SU_plots" sheet_interval="NOW");
     goptions iback="&foutpath./Abrahami_psplot_dpp4i_SU&todaysdate..png" imagestyle=fit;
     proc gslide;RUN;quit; goptions reset=all;
@@ -160,7 +159,7 @@ ods excel options(sheet_name="DPP4i_SU_plots" sheet_interval="NOW");
  */
     *dpp4i vs TZD;
 ods excel options(sheet_name="DPP4i_TZD" sheet_interval="NOW");
-    proc print data=table1_dpp4ivTZD noobs label; var row dpp4i_pretrim tzd_pretrim sdiff_pretrim dpp4i tzd sdiff tzd_wgt sdiff_wgt; run;
+    proc print data=table1_dpp4ivTZD noobs label; var row dpp4i tzd sdiff tzd_wgt sdiff_wgt; run;
 ods excel options(sheet_name="DPP4i_TZD_plots" sheet_interval="NOW");
     goptions iback="&foutpath./Abrahami_psplot_dpp4i_TZD&todaysdate..png" imagestyle=fit;
     proc gslide;RUN;quit; goptions reset=all;
@@ -172,7 +171,7 @@ ods excel options(sheet_name="DPP4i_TZD_plots" sheet_interval="NOW");
  */
     *dpp4i vs SGLT2i;
 ods excel options(sheet_name="DPP4i_SGLT2i" sheet_interval="NOW");
-    proc print data=table1_dpp4ivSGLT2i noobs label; var row dpp4i_pretrim sglt2i_pretrim sdiff_pretrim dpp4i sglt2i sdiff sglt2i_wgt sdiff_wgt; run;
+    proc print data=table1_dpp4ivSGLT2i noobs label; var row dpp4i sglt2i sdiff sglt2i_wgt sdiff_wgt; run;
 ods excel options(sheet_name="DPP4i_SGLT2i_plots" sheet_interval="NOW");
     goptions iback="&foutpath./Abrahami_psplot_dpp4i_SGLT2i&todaysdate..png" imagestyle=fit;
     proc gslide;RUN;quit;    goptions reset=all;

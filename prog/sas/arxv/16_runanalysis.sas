@@ -109,7 +109,7 @@ data dsn; set a.PS_&exposure._&comparator._1yrlb;
 	format twoyear      date9.;
 	format threeyear    date9.;
 	format fouryear     date9.;
-
+*display fusion; 
     /* Coding in more time variables  */
     *rxchange: for switching one class from another class;
         rxchange=min(DiscontDate, enddt,  switchAugmentDate);

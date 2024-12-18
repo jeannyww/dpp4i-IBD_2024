@@ -686,7 +686,8 @@ data tmp2; set tmp2; where delete_IBD ne 1;RUN;
 //SECTION - ## 5. PS weighting adapted from 015_PSweighting.sas
 \*===================================*/
 /* region */
-%macro psweighting_Ab ( exposure , comparator , weight , addedmodelvars ,basemodelvars , tablerowvars, refyear  , dat, save );
+%macro psweighting_Ab ( exposure , comparator , weight , addedmodelvars ,basemodelvars , 
+, refyear  , dat, save );
 
     data tmp1;
         set a.Abrahami_allmerged_&exposure._&comparator.;

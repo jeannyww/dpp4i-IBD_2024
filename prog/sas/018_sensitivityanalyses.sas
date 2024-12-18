@@ -19,17 +19,15 @@ Other details: CPRD-DPP4i project in collaboration with USB
 [x]- Table 1 for Abrahami et. al :trimming is why:(check code and why population moves nonintuitively)
 [x]- Table 1 in main manuscript and untrimmed cohort in the appendix
 
+[ ] Check for TVE whether covariates changed between the same ID at time of intiiating comparator vs. time of initiating DPP4i
 
-1. The primary outcome of this study was incident IBD 6-months after the index date. We also assessed the risk of Crohn’s disease and ulcerative colitis as secondary outcomes. We performed sensitivity analyses where we required an IBD diagnosis accompanied by a supporting event in the 6 months preceding or following the diagnosis.
+[ ] 1. The primary outcome of this study was incident IBD 6-months after the index date. We also assessed the risk of Crohn’s disease and ulcerative colitis as secondary outcomes. We performed sensitivity analyses where we required an IBD diagnosis accompanied by a supporting event in the 6 months preceding or following the diagnosis.
 
-2. Secondary analyses [in progress]
+[ ] 2. Secondary analyses [in progress]
 Analyses were stratified by age at cohort entry (<60 and ≥60 years) and sex. To assess whether the risk of IBD varied with duration of use, we estimated separate HRs for the first 12 months, and after 12 months of follow-up. Additionally, we evaluated whether the risk for IBD varied by patients with and without pre-existing autoimmune disease and gastroenterological disease at cohort entry, since patients with pre-existing conditions tend to have more frequent encounters with the healthcare system and may therefore have more opportunity for IBD detection and diagnosis.
 
 [ ]  you could help figure the red text/numbers in the 2nd paragraph, that would be great.
-
 In the TVE design, we identified 89,144, 81,099, 47,131 new users of DPP4i   and  78,390 SU, 16,181 TZD, or 30,509 SGLT2i, respectively (Web Table 1-3 ). Across TVE cohorts, the mean age ranged from 59.9-63.5 years, and 39.8%-42.3% of patients were female.  The prevalence of comorbidities was similar across all three comparison cohorts, except that DPP4i initiators were more likely to be overweight compared to SU initiators and less likely to be overweight compared to SGLT2i initiators. Weighted SAMDs were <0.1 for all measured covariates except for 1) ulcerative colitis and history of SU and TZD use in the DPP4i vs. SU comparison and 2) history of insulin use in the DPP4i vs. TZD comparison, and 3) history of metformin and SGLT2i use in the DPP4i vs. SGLT2i comparison .
-
-
 ***************************************/
 options nofmterr pageno=1 fullstimer stimer stimefmt=z compress=yes ;
 options macrogen symbolgen mlogic mprint mcompile mcompilenote=all;
@@ -41,23 +39,138 @@ option SASAUTOS=(SASAUTOS "D:\Externe Projekte\UNC\wangje\prog\sas\macros");
 /*===================================*\
 //SECTION - A:  TVE covariate comparison
 [ ] Check for TVE whether covariates changed between the same ID at time of intiiating comparator vs. time of initiating DPP4i
+From datasets:
+A.ABRAHAMI_ALLMERGED_DPP4I_SU
+A.ABRAHAMI_ALLMERGED_DPP4I_TZD
+A.ABRAHAMI_ALLMERGED_DPP4I_SGLT2I
+using keepflag_prevalentuser==1 (the flag that identified DPP4i initiators who were prevalent users of the comparator drug)- created in 17_dependencies.sas lines 384, 420
+excludeflag_prevalentuser == people who should have been excluded but were kept, similar to keepflag_prevalentuser
 \*===================================*/
 /* region */
 
-/* Print out selected obs for TVE design accross each TVE cohort*/
-PROC PRINT data=a.ABRAHAMI_PS_DPP4I_SU (obs=5); 
-    run;
-PROC SQL;
-    /*  */
+%LET latency = 180;
+%LET induction = 180;
+%LET outtime = '31Dec2022'd ;
+%LET ibd_def = ibd1;
+%LET intime = filldate2;
+
+/* Check per comparator ACNU */
+%LET exposure = dpp4i;
+%LET comparator = su;
+*%LET comparator = tzd;
+*%LET comparator = sglt2i;
+
+/* Reading in PS trimmed dataset and recreating time variables, lifted from 17_dependencies lines 1007*/
+data dsn; 
+    set a.Abrahami_PS_&exposure._&comparator; 
+            /* Coding in more time variables  */
+        *rxchange: for switching one class from another class;
+            rxchange=min(DiscontDate, enddt,  switchAugmentDate);
+            label rxchange='MIN of DisconDate, End of Continuous Enrollment, SwitchAugmentDate';
+            format rxchange date9.;
+        *end of drug in the drug class; 
+            endofdrug=rxchange+&latency;
+        if &exposure =0 and switchAugmentDate ne . then do;
+                enddate= min(&ibd_def._dt, dpp4i_filldate2 +&induction);
+                IF enddate>(&intime + &induction) and enddate=&ibd_def._dt and &ibd_def ne .    then event=1; else event=0;
+                end;
+        if &exposure =1 and excludeflag_prevalentuser eq 1 then do;
+                enddate= min(endofdrug, &ibd_def._dt, enddt, endstudy_dt,&outtime, death_dt, dbexit_dt,  LastColl_Dt);
+                if enddate>(&intime + &induction) and enddate=&ibd_def._dt and &ibd_def ne . then event=1; else event=0;
+                end;
+            /* for initiators of dpp4i who never switched from the comparator */
+            else if &exposure=1 and excludeflag_prevalentuser ne 1 then do;
+                enddate= min(endofdrug, &ibd_def._dt, enddt, endstudy_dt,&outtime, death_dt, dbexit_dt,  LastColl_Dt);
+                IF enddate>(&intime + &induction) and enddate=&ibd_def._dt and &ibd_def ne . then event=1; else event=0;
+            end;
+            /* for initiators of comparator drug who never switched */
+            else if &exposure=0 and switchAugmentDate eq . then do;
+                enddate= min(endofdrug, &ibd_def._dt, enddt, endstudy_dt,&outtime, death_dt, dbexit_dt,  LastColl_Dt);
+                IF enddate>(&intime + &induction) and enddate=&ibd_def._dt and &ibd_def ne . then event=1; else event=0;
+            end;
+        *formatting etc; 
+        format enddate date9. ; label enddate ="Date min of (&ibd_def._dt, enddt, endstudy_dt,&outtime, death_dt, dbexit_dt,  LastColl_Dt), or switch/augment date for comparators";
+        *"Date min of (death_dt, endstudy_dt, dbexit_dt, LastColl_Dt)";
+        enddatedelete=min(  enddt, endstudy_dt, &outtime);  
+        
+        *flag to remove individuals who did not reach the induction period for followup ;
+        IF indexdate<= enddatedelete<=(&intime + &induction) then deleteobs=1; 
+            else deleteobs=0;
+        label deleteobs="Flag to remove individuals who did not reach the induction period for followup";
+        IF indexdate <= &ibd_def._dt <=(&intime + &induction) then IBDdx_inductionperiod=1;
+            else IBDdx_inductionperiod=0;
+        label IBDdx_inductionperiod="Flag for individuals with IBD diagnosis within the induction period";
+        * followup time;
+        time=(enddate-(&intime.+&induction)+1)/365.25;
+        time_drugdur=(min(rxchange, enddate)-(indexdate+1))/365.25;    
+    
+        if time>0 then logtime=(log(time/100000))  ;
+        else time=.;
+        label time = "person-years" time_drugdur= "duration of treatment";
+        label logtime="log(person-years)";
+        *flag for individuals with IBD diagnosis ever (IBD before time 0) or IBD post-index date without regard to the induction period; 
+        if indexdate<= &ibd_def._dt then IBD_postindex=1; else IBD_postindex=0;
+            RUN;
+/* tmp dataset for id repeats, lifted from 17_dependencies lines 1178-1188  */
+PROC SQL noprint;
+    create table tmp as
+    SELECT id
+    FROM dsn
+    GROUP BY id
+    HAVING COUNT(*) > 1;
+    SELECT count (distinct id) as n FROM tmp;
 QUIT;
+/* tmp2 dataset for repeated ids */
+PROC SQL noprint;
+    create table tmp2 as
+    select a.* from dsn as a 
+    inner join tmp as b on a.id=b.id order by a.id, a.indexdate;
+    select count(distinct id) as n from tmp2;
+QUIT;
+title "Individuals who contributed twice, first to unexposed person time, then contributed to exposed person time";
+PROC FREQ DATA=tmp2;
+TABLES excludeflag_prevalentuser /list missing;
+RUN;
+data tmp2; retain 
+    id indexdate filldate2 enddate event age  sex entry_year   bmi_cat2 alcohol_cat smoke_cat hba1c_Cat2   oAntGLP_1yrlookback dpp4i_1yrlookback sglt2i_1yrlookback TZD_1yrlookback  su_1yrlookback nephr_ever nerop_ever dret_ever mi_ever stroke_ever PerArtD_ever bigua_ever insulin_ever prand_ever agluco_ever OAntGLP_ever ass_ever allnsa_ever hrtopp_ever estr_ever gesta_ever pill_ever psorp_ever vasc_ever RhArth_Ever SjSy_Ever sLup_ever num_nondmdrugs1yr; 
+ set tmp2; run;
+/* Manually check and printing those who contributed twice selected rows*/
+PROC SQL outobs=20 ;
+    select * from tmp2 order by a.id, a.indexdate;
+title; 
+/* Then run table1 macro unweighted those who were repeats only */
+    proc format; value &exposure. 0="&comparator." 1="&exposure."; run;
+    proc datasets lib=work nolist nodetails; modify tmp2; 
+        format &exposure. &exposure..  sex $sexf.  alcohol_cat $statusf. smoke_cat $statusf. hba1c_cat2  hba1cf. bmi_cat bmif.;
+        run;
+    %LET wgtvar=;
+    %let ds = tmp2 ;
+    %let colVar = &exposure.;
+    %let rowVars = age  sex entry_year   bmi_cat2 alcohol_cat smoke_cat hba1c_Cat2   oAntGLP_1yrlookback dpp4i_1yrlookback sglt2i_1yrlookback TZD_1yrlookback  su_1yrlookback
+nephr_ever nerop_ever dret_ever mi_ever stroke_ever PerArtD_ever bigua_ever insulin_ever prand_ever agluco_ever OAntGLP_ever ass_ever allnsa_ever hrtopp_ever estr_ever gesta_ever pill_ever psorp_ever vasc_ever RhArth_Ever SjSy_Ever sLup_ever num_nondmdrugs1yr;
+    %LET outname = ;
+    options orientation=landscape nodate nonumber nocenter;
+    %table1(inds= &ds, colVar= &colVar, rowVars= &rowVars, wgtVar= , maxLevels=16, outfile=&outname, title=&outname, cellsize=5);
+    *print to test; 
+    data testTVE_&comparator.; 
+        set final; run;
+    proc print data=testTVE_&comparator. noobs label; var row &exposure &comparator sdiff; run;
 
-
+    *then decide whether to print to rtf or not; 
+    ods escapechar='~' ;
+    options orientation=landscape nodate nonumber nocenter;
+    ods rtf file="&toutPath./TVE_&exposure._&comparator._&todaysdate..rtf";
+    proc print data=testTVE_&comparator. noobs label; var row &exposure &comparator sdiff; run;
+    ods rtf close;
 /* endregion //!SECTION */
+
+
 /*===================================*\
 //SECTION - B.1:
 [ ] add analyses and code that are missing from the manuscript
 (1) more rigorous IBD outcome definition: from Manuscript Page 4;
 Outcome assessment section.
+- may exclude UC and CD individually might have low counts, and we are now more focused as a methods paper 
 - "We performed sensitivity analyses where we required an IBD diagnosis accompanied by a supporting event in the 6 months preceding or following the diagnosis.
 - We defined a supporting event as a prescription for 5-ASA, a referral for endoscopy, a referral to gastroenterology, or at least one IBD-related symptom (abdominal pain, diarrhea or bloody stools).
 - If the date of the supporting code occurred before the date of the IBD diagnostic code, we considered the date of the supporting code to be the date of the incident IBD."**this is not incorporated in the IBD definitions** 
@@ -70,7 +183,7 @@ Discussion page 9 highlighted in red:
 /* region */
 
 /* Checking frequencies before analyses. The following definitions*/
-/* ibd1: 	none.  */
+/* ibd1: 	primary outcome, incident IBD 6-months after the index date  */
 /* ibd2: 	{colo} or {sigmo} diagnosis within 30 days before (including) the {ibd_i} diagnosis. */
 /* Ibd3:	{colo}, {sigmo} or {biops} diagnosis within 30 days before (including) the {ibd_i} diagnosis. */
 /* Ibd4: 	{colo}, {Sigmo}, {Gastent} {AbdPain} {Diarr} or {BkStool} diagnosis within 30 days before (including) the {ibd_i} diagnosis. AND {AminoS}, {TnfAI}, {Budeo}, {OtherImm} or {CycloSpor} prescription within 30 days after (including) the {ibd_i} diagnosis.  */
@@ -80,21 +193,54 @@ Discussion page 9 highlighted in red:
 PROC FREQ DATA= A.PS_DPP4I_SU_1YRLB; tables DPP4I*SU*(ibd1 ibd2 ibd3 ibd4 ibd5 ibd) / LIST MISSING ; run; 
 PROC FREQ DATA= A.PS_DPP4I_TZD_1YRLB; tables DPP4I*TZD*(ibd1 ibd2 ibd3 ibd4 ibd5ibd) / LIST MISSING ; run; 
 PROC FREQ DATA= A.PS_DPP4I_SGLT2I_1YRLB; tables DPP4I*sglt2I*(ibd1 ibd2 ibd3 ibd4 ibd5 ibd) / LIST MISSING ; run; 
+/* If counts sufficient, then run analysis chosing the IBD definitions which have 'sufficient' counts */
 
+%LET ibd_def = ibd4;
+ods excel file="&toutpath./ACNU_&ibd_def._&todaysdate..xlsx"
+options (
+    Sheet_interval="NONE"
+    embedded_titles="NO"
+    embedded_footnotes="NO"
+);
+    ods excel options(sheet_name="DPP4i_SU IT" sheet_interval="NOW");
+    %analysis ( exposure= dpp4i , comparator= su, ana_name=main, type= IT, weight= smrw, induction= 180, latency= 180 , ibd_def= &ibd_def., intime= filldate2, outtime='31Dec2022'd , outdata=IT , save=N ) ;
+    ods excel options(sheet_name="DPP4i_TZD IT" sheet_interval="NOW");
+    %analysis ( exposure= dpp4i , comparator= tzd, ana_name=main, type= IT, weight= smrw, induction= 180, latency= 180 , ibd_def= &ibd_def., intime= filldate2, outtime='31Dec2022'd , outdata=IT , save=N ) ;
+    
+    ods excel options(sheet_name="DPP4i_SGLT2i IT" sheet_interval="NOW");
+    %analysis ( exposure= dpp4i , comparator= sglt2i, ana_name=main, type= IT, weight= smrw, induction= 180, latency= 180 , ibd_def= &ibd_def., intime= filldate2, outtime='31Dec2022'd , outdata=IT , save=N ) ;
+    ods excel close;
+
+    
 /* Checking frequencies before running TVE anaylsis  */
 PROC FREQ DATA= A.ABRAHAMI_PS_DPP4I_SU; tables DPP4I*SU*(ibd1 ibd2 ibd3 ibd4 ibd5 ibd) / LIST MISSING ; run; 
 PROC FREQ DATA= A.ABRAHAMI_PS_DPP4I_TZD; tables DPP4I*TZD*(ibd1 ibd2 ibd3 ibd4 ibd5ibd) / LIST MISSING ; run; 
 PROC FREQ DATA= A.ABRAHAMI_PS_DPP4I_SGLT2I; tables DPP4I*sglt2I*(ibd1 ibd2 ibd3 ibd4 ibd5 ibd) / LIST MISSING ; run; 
 
-/* If counts sufficient, then run analysis */
+/* If counts sufficient, then run analysis for IBD4 */
+ods excel file="&toutpath./Abrahami_&ibd_def._&todaysdate..xlsx"
+options (
+    Sheet_interval="NONE"
+    embedded_titles="NO"
+    embedded_footnotes="NO"
+);
+    ods excel options(sheet_name="DPP4i_SU " sheet_interval="NOW");
+    %analysis_Ab (exclude_ibd=N, exposure= dpp4i , comparator= su, ana_name=main, type= IT, weight= smrw, induction= 180, latency= 180 , ibd_def=&ibd_def. , intime= filldate2, outtime='31Dec2022'd , outdata=IT , save=N ) ;
+    
+    ods excel options(sheet_name="DPP4i_TZD " sheet_interval="NOW");
+    %analysis_Ab (exclude_ibd=N, exposure= dpp4i , comparator= tzd, ana_name=main, type= IT, weight= smrw, induction= 180, latency= 180 , ibd_def=&ibd_def. , intime= filldate2, outtime='31Dec2022'd , outdata=IT , save=N ) ;
+        
+    ods excel options(sheet_name="DPP4i_SGLT2i " sheet_interval="NOW");
+    %analysis_Ab (exclude_ibd=N, exposure= dpp4i , comparator= sglt2i, ana_name=main, type= IT, weight= smrw, induction= 180, latency= 180 , ibd_def=&ibd_def. , intime= filldate2, outtime='31Dec2022'd , outdata=IT , save=N ) ;
 
+    ods excel close; 
 
 /* endregion //!SECTION */
 /*===================================*\
-//SECTION - B.2:
+//SECTION - B.2: De-prioritizing because this is a methods paper now.
 [ ] add analyses and code that are missing from the manuscript (page 4, secondary analyses)
 (2) Analyses were stratified by age at cohort entry (<60 and ≥60 years) 
-(3) and sex. 
+(3) and stratified by sex. 
 (4) To assess whether the risk of IBD varied with duration of use, we estimated separate HRs for the first 12 months, and after 12 months of follow-up. 
 (5) Additionally, we evaluated whether the risk for IBD varied by patients with and without pre-existing autoimmune disease and gastroenterological disease at cohort entry, since patients with pre-existing conditions tend to have more frequent encounters with the healthcare system and may therefore have more opportunity for IBD detection and diagnosis.
 \*===================================*/

@@ -76,7 +76,7 @@ outtime =  ,      *time which analysis fu ends, ie for AT: '31Dec2017'd, for ITT
 //SECTION - First- Creating Macro
 \*===================================*/
 
-%macro analysis ( exposure , comparator , ana_name , type , weight , induction , latency , ibd_def , intime , outtime , outdata, save ) / minoperator mindelimiter=',';
+%macro analysis ( exposure , comparator , ana_name , type , weight , induction , latency , ibd_def , intime , outtime , outdata, save) / minoperator mindelimiter=',';
 
 /*===================================*\
 //SECTION - Setting up data for analysis 
@@ -93,7 +93,7 @@ data dsn; set a.PS_&exposure._&comparator._1yrlb;
 
    /* where indexdate=date of first Rx, filldate2=date of 2nd rx, and for the main analysis the entry=date of 2nd prescription */
     oneyear  =&intime +365.25;
-	twoyear=&intime +730.5;
+	twoyear  =&intime +730.5;
 	threeyear=&intime +1095.75;
 	fouryear =&intime +1460;
    * oneyear  =indexdate+365.25;
@@ -117,24 +117,25 @@ data dsn; set a.PS_&exposure._&comparator._1yrlb;
         format rxchange date9.;
     *end of drug in the drug class; 
         endofdrug=rxchange+&latency;
-
+    
     /* Initial Treatment */
     %if %upcase(&type) eq IT %then %do;
-        enddate= min(&ibd_def._dt, enddt, endstudy_dt,&outtime, death_dt, dbexit_dt,  LastColl_Dt);
+        enddate= min(			&ibd_def._dt, enddt, endstudy_dt,&outtime, death_dt, dbexit_dt,  LastColl_Dt);
         format enddate date9. ; label enddate ="Date min of (&ibd_def._dt, enddt, endstudy_dt,&outtime, death_dt, dbexit_dt,  LastColl_Dt)";
         *"Date min of (&ibd_def._dt,death_dt, endstudy_dt, dbexit_dt, LastColl_Dt)";
         %end;
 
     /* As Treated */ 
     %if %upcase(&type) eq AT %then %do;  
-        enddate=min(endofdrug , &ibd_def._dt,&outtime,death_dt, endstudy_dt, dbexit_dt, enddt, LastColl_Dt ); /* AT exit date and AT exit_reason   */
+        enddate= min(endofdrug, &ibd_def._dt, enddt, endstudy_dt, &outtime, death_dt, dbexit_dt, LastColl_Dt ); /* AT exit date and AT exit_reason   */
         format enddate date9.; LABEL enddate="Date min of (&ibd_def._dt, drug discontinuation, death_dt, endstudy_dt, dbexit_dt, enddt (end enroll), LastColl_Dt)";
         %end; 
 
-    /* As Treated and censoring for badrx (sensitivity analysis 6 "6)	We will additionally censor patients when they receive medications that could potentially induce IBD progression [19] (Appendix 10). ") 
+    /* As Treated and censoring for badrx (sensitivity analysis 6 "6)	
+	We will additionally censor patients when they receive medications that could potentially induce IBD progression [19] (Appendix 10). ") 
     we allow events to occur 180 days after stopping medication */
     %if %upcase(&type) eq ATB %then %do;
-        enddate= min(endofdrug, &ibd_def._dt, &outtime, discontDate, death_dt, endstudy_dt, dbexit_dt, enddt, LastColl_Dt, (badrx_dt+ &latency) );
+        enddate= min(endofdrug, &ibd_def._dt,  enddt, endstudy_dt, &outtime, death_dt, dbexit_dt,LastColl_Dt, discontDate, (badrx_dt+ &latency) );
         format enddate date9.; label enddate="Date min of (&ibd_def._dt, drug discontinuation, death_dt, endstudy_dt, dbexit_dt, enddt (end enroll), LastColl_Dt, badrx_dt)";
         %end;
  
@@ -142,7 +143,7 @@ data dsn; set a.PS_&exposure._&comparator._1yrlb;
     /* Either  */
     %if %upcase(&type) # AT, IT %then %do;
         *"Date min of (death_dt, endstudy_dt, dbexit_dt, LastColl_Dt)";
-        enddatedelete=min(  enddt, endstudy_dt, &outtime);  
+        enddatedelete=min(enddt, endstudy_dt, &outtime);  
         
         *flag to remove individuals who did not reach the induction period for followup ;
         IF indexdate<= enddatedelete<=(&intime + &induction) then deleteobs=1; 
@@ -152,7 +153,7 @@ data dsn; set a.PS_&exposure._&comparator._1yrlb;
             else IBDdx_inductionperiod=0;
         label IBDdx_inductionperiod="Flag for individuals with IBD diagnosis within the induction period";
         %end;
-/* NOTE         */
+
     *Creating event variable and followup time variable; 
     IF enddate>(&intime + &induction) and enddate=&ibd_def._dt and &ibd_def ne . then event=1; else event=0;
 
@@ -178,17 +179,17 @@ PROC SQL noprint;
     insert into tmp_counts
         set exclusion_num=&num_obs+1, 
         long_text="Number of observations after excluding individuals whose endstudy_dt <= &intime. + &induction.",
-        dpp4i= (select count(*) from dsn where (&exposure=1 and deleteobs=0)),
-        dpp4i_diff= -(select count(*) from dsn where (&exposure=1 and deleteobs=1)),
-        &comparator.=(select count(*) from dsn where (&exposure ne 1 and deleteobs=0)) ,
+        dpp4i            =  (select count(*) from dsn where (&exposure=1    and deleteobs=0)),
+        dpp4i_diff       = -(select count(*) from dsn where (&exposure=1    and deleteobs=1)),
+        &comparator.     =  (select count(*) from dsn where (&exposure ne 1 and deleteobs=0)) ,
         &comparator._diff= -(select count(*) from dsn where (&exposure ne 1 and deleteobs=1)),   
-        full= (select count(*) from dsn where (deleteobs=0));
+        full             =  (select count(*) from dsn where (deleteobs=0));
     insert into tmp_counts
         set exclusion_num=&num_obs+2, 
-        long_text="Number of individuals with time0 <&ibd_def._dt <= &intime. + &induction.",
-        dpp4i= (select count(*) from dsn where (&exposure=1 and IBDdx_inductionperiod=0)),
-        dpp4i_diff= -(select count(*) from dsn where (&exposure=1 and IBDdx_inductionperiod=1)),
-        &comparator.=(select count(*) from dsn where (&exposure ne 1 and IBDdx_inductionperiod=0)) ,
+        long_text        ="Number of individuals with time0 <&ibd_def._dt <= &intime. + &induction.",
+        dpp4i            =  (select count(*) from dsn where (&exposure=1    and IBDdx_inductionperiod=0)),
+        dpp4i_diff       = -(select count(*) from dsn where (&exposure=1    and IBDdx_inductionperiod=1)),
+        &comparator.     =  (select count(*) from dsn where (&exposure ne 1 and IBDdx_inductionperiod=0)) ,
         &comparator._diff= -(select count(*) from dsn where (&exposure ne 1 and IBDdx_inductionperiod=1)),
         full= (select count(*) from dsn where (IBDdx_inductionperiod=0));
 QUIT;
@@ -200,23 +201,44 @@ proc sql noprint;
     insert into tmp_counts
         set exclusion_num=&num_obs+1, 
         long_text="Number of individuals with positive, non-zero &type followup time (enddate-(&intime.+&induction)>0)",
-        dpp4i= (select count(*) from dsn where (&exposure=1 and time ne .)),
-        dpp4i_diff= -(select count(*) from dsn where (&exposure=1 and time eq .)),
-        &comparator.=(select count(*) from dsn where (&exposure ne 1 and time ne .)) ,
+        dpp4i            =  (select count(*) from dsn where (&exposure=1    and time ne .)),
+        dpp4i_diff       = -(select count(*) from dsn where (&exposure=1    and time eq .)),
+        &comparator.     =  (select count(*) from dsn where (&exposure ne 1 and time ne .)) ,
         &comparator._diff= -(select count(*) from dsn where (&exposure ne 1 and time eq .)),   
-        full= (select count(*) from dsn where (time ne .));
+        full             =  (select count(*) from dsn where (time ne .));
     select * from tmp_counts;
 %if %upcase(&save) eq Y %then %do;
     create table temp.excl_016_&exposure._&comparator._1yr&type. as select * from tmp_counts;
     %end;
 quit;
 proc print data= tmp_counts; run;
-data dsn; set dsn; if time eq . then delete; run;
+data dsn; set dsn; if time eq . then delete; 
+    /* *added for reviewer responses November 23, 2025: Median time between first and second prescription */
+    timebetween2nd1strx=filldate2-&intime;
+    /* end added code segment */
+run;
+
 /* endregion //!SECTION */
 
 /*===================================*\
 //SECTION - Getting median futime, dutime, and counts
 \*===================================*/
+
+/* *added for reviewer responses November 23, 2025: Median time between first and second prescription */
+ods output summary=mediantimebetweenrx;
+proc means data = dsn STACKODS  N NMISS SUM MEAN STD MIN MAX Q1 MEDIAN Q3;
+    where timebetween2nd1strx ne .; 
+    class &exposure;
+    var timebetween2nd1strx;
+run;
+data mediantimebetweenrx(keep=&exposure NMISS Nobs mediantimebetweenrx sum );			
+    set mediantimebetweenrx;
+    mediantimebetweenrx   = compress(put((median), 6.2)) || " (" || compress(put((q1), 6.2)) || "-" || compress(put((q3), 6.2)) || ")"; 
+    format sum 8.0;
+run;
+/* end added code segment */
+
+
 /* median time of followup */
 ods output summary=mediantime;
 proc means data = dsn STACKODS  N NMISS SUM MEAN STD MIN MAX Q1 MEDIAN Q3;
@@ -234,7 +256,7 @@ run;
 
 data mediantime(keep=&exposure NMISS Nobs mediantime sum );			
     set mediantime;
-    mediantime = compress(put((median), 6.2)) || " (" || compress(put((q1), 6.2)) || "-" || compress(put((q3), 6.2)) || ")"; 
+    mediantime   = compress(put((median), 6.2)) || " (" || compress(put((q1), 6.2)) || "-" || compress(put((q3), 6.2)) || ")"; 
     format sum 8.0;
 run; 
     
@@ -245,7 +267,8 @@ data mediantimedu(keep=&exposure mediantimedu );
 run; 
 
 data mediantimetmp(rename=(sum=time_sum)); 
-    merge mediantime mediantimedu; 
+    /* November 23, 2025 addition of mediantimebetweenrx */
+    merge mediantime mediantimedu mediantimebetweenrx; /* end edited code segment */
     by &exposure; 
 run;
 
@@ -359,7 +382,7 @@ Data tmpout1
     label time_Sum = "Person-year";    
 run;
 
-Data out_&exposure.v&comparator._&ana_name._&outdata.;
+Data a.out_&exposure.v&comparator._&ana_name._&outdata.;
         retain TYPE &exposure Nobs n_switch mediantime time_sum event_sum IBD_event_switchers IBD_events_censored IBD_hx_sum  rate crudehr &weight.HR analysis induction latency exp unexp; 
         set tmpout1;
             
@@ -372,7 +395,7 @@ run;
 //SECTION - KM plots 
 \*===================================*/
 /* region */
-ods excel options(sheet_interval="NOW");
+/*ods excel options(sheet_interval="NOW");*/
 /* weighted risks    */
 proc phreg data=dsn COVS ;
     MODEL &timevar*&event(0)= ; 
@@ -391,32 +414,53 @@ risk_upper=1-lower;
 risk_lower=1-upper;
 run;
 
-data exp(keep=&timevar risk risk_lower risk_upper &exposure.) unexp(keep=&timevar risk risk_lower risk_upper &exposure.);
+data exp(keep=&timevar risk risk_lower risk_upper &exposure.) 
+   unexp(keep=&timevar risk risk_lower risk_upper &exposure.);
 set  pred;
 if &exposure=1 then output exp;
 if &exposure=0 then output unexp;
 run;
+/*
 Data plot;
-merge exp(rename=(risk=&exposure._risk risk_lower=&exposure._lower risk_upper=&exposure._upper)) unexp(rename=(risk=&comparator._risk risk_lower=&comparator._lower risk_upper=&comparator._upper));
-by &timevar;
+	merge exp(rename=(risk=&exposure   risk_lower=&exposure._lower   risk_upper=&comparator._upper)) 
+	    unexp(rename=(risk=&comparator risk_lower=&comparator._lower risk_upper=&comparator._upper));
+	by &timevar;
+run;*/
+
+
+Data plot;
+	merge exp(rename=(risk=&exposure._risk   risk_lower=&exposure._lower   risk_upper=&exposure._upper)) 
+	    unexp(rename=(risk=&comparator._risk risk_lower=&comparator._lower risk_upper=&comparator._upper));
+	by &timevar;
 run;
+
+proc template;
+	define style mystyle;
+	parent=styles.sasweb;
+	class graphwalls/frameboarder=off;
+	class graphbackground/color=white;
+	end;
+run;
+
+ods graphics /noborder reset=index imagename="wKM_&ana_name._&exposure.v&comparator._%sysfunc(date(),date.)" imagefmt=tiff;
+ods listing style=mystyle gpath="&fOutPath.";  
 
 PROC SGPLOT DATA = plot NOAUTOLEGEND DESCRIPTION=""; 
 YAXIS LABEL = 'Risk of Inflammatory Bowel Disease' LABELATTRS=(size=13pt weight=bold)  VALUES = (0 TO 0.0045 BY 0.0005) valueattrs=(size=12pt); 
-XAXIS LABEL = 'Follow-up Time (years)' 		    LABELATTRS=(size=13pt weight=bold)  VALUES = (0 TO 4 BY 0.5) valueattrs=(size=12pt); 
+XAXIS LABEL = 'Follow-up Time (years)' 		       LABELATTRS=(size=13pt weight=bold)  VALUES = (0 TO 4 BY 0.5)         valueattrs=(size=12pt); 
 
 title height=12pt bold " ";
-step x=&timevar y=&exposure._risk/lineattrs=(color=blue pattern=1 thickness=2) name="&exposure.";
+step x=&timevar y=&exposure._risk /lineattrs=(color=blue pattern=1  thickness=2) name="&exposure._risk";
 step x=&timevar y=&exposure._lower/lineattrs=(color=blue pattern=20 thickness=1) name="&exposure._lower";
 step x=&timevar y=&exposure._upper/lineattrs=(color=blue pattern=20 thickness=1) name="&exposure._upper";
 
-step x=&timevar y=&comparator._risk/lineattrs=(color=red  pattern=1 thickness=2) name="&comparator.";
+step x=&timevar y=&comparator._risk /lineattrs=(color=red  pattern=1  thickness=2) name="&comparator._risk";
 step x=&timevar y=&comparator._lower/lineattrs=(color=red  pattern=20 thickness=1) name="&comparator._lower";
 step x=&timevar y=&comparator._upper/lineattrs=(color=red  pattern=20 thickness=1) name="&comparator._upper";
-keylegend "&exposure." "&comparator." /location=inside position=topleft valueattrs=(size=12pt weight=bold) NOBORDER;
+keylegend "&exposure._risk" "&comparator._risk" /location=inside position=topleft valueattrs=(size=12pt weight=bold) NOBORDER;
 FOOTNOTE;
 RUN; 
-
+ods graphics off;
 
 /*No. of risk at 0 year*/
 %let dataset=dsn;
@@ -452,8 +496,10 @@ id fu_year; run;
 proc print data= tmp  ;  variables drug fuyear:;
 run; 
 
-proc print data= out_&exposure.v&comparator._&ana_name._&outdata. ; 
+proc print data= a.out_&exposure.v&comparator._&ana_name._&outdata. ; 
 run; 
+
+ods listing;
 /* endregion //!SECTION */
 %mend analysis;
 
@@ -502,7 +548,7 @@ run;
 /* region */
 
 
-ods excel file="&toutpath./Main_T2_compiled_&todaysdate..xlsx"
+ods excel file="&toutpath.\Main_T2_compiled_&todaysdate..xlsx"
 options (
 Sheet_interval="NONE"
 embedded_titles="NO"
@@ -512,40 +558,78 @@ embedded_footnotes="NO"
 /* threeyearout */
 
     ods excel options(sheet_name="DPP4i_SU IT" sheet_interval="NOW");
-    %analysis ( exposure= dpp4i , comparator= su, ana_name=main, type= IT, weight= smrw, induction= 180, latency= 180 , ibd_def= ibd1, intime= filldate2, outtime='31Dec2022'd , outdata=IT , save=N ) ;
+    %analysis ( exposure= dpp4i , comparator= su, ana_name=mITac, type= IT, weight= smrw, induction= 180, latency= 180 , ibd_def= ibd1, intime= filldate2, outtime='31Dec2022'd , outdata=IT , save=N ) ;
     ods excel options(sheet_name="DPP4i_SU IT 3y" sheet_interval="NOW");
-    %analysis ( exposure= dpp4i , comparator= su, ana_name=main, type= IT, weight= smrw, induction= 180, latency= 180 , ibd_def= ibd1, intime= filldate2, outtime=threeyearout, outdata=IT , save=N ) ;
+    %analysis ( exposure= dpp4i , comparator= su, ana_name=mITac3, type= IT, weight= smrw, induction= 180, latency= 180 , ibd_def= ibd1, intime= filldate2, outtime=threeyearout, outdata=IT , save=N ) ;
     
     ods excel options(sheet_name="DPP4i_TZD IT" sheet_interval="NOW");
-    %analysis ( exposure= dpp4i , comparator= tzd, ana_name=main, type= IT, weight= smrw, induction= 180, latency= 180 , ibd_def= ibd1, intime= filldate2, outtime='31Dec2022'd , outdata=IT , save=N ) ;
+    %analysis ( exposure= dpp4i , comparator= tzd, ana_name=mITac, type= IT, weight= smrw, induction= 180, latency= 180 , ibd_def= ibd1, intime= filldate2, outtime='31Dec2022'd , outdata=IT , save=N ) ;
     ods excel options(sheet_name="DPP4i_TZD IT 3y" sheet_interval="NOW");
-    %analysis ( exposure= dpp4i , comparator= tzd, ana_name=main, type= IT, weight= smrw, induction= 180, latency= 180 , ibd_def= ibd1, intime= filldate2, outtime=threeyearout, outdata=IT , save=N ) ;    
+    %analysis ( exposure= dpp4i , comparator= tzd, ana_name=mITac3, type= IT, weight= smrw, induction= 180, latency= 180 , ibd_def= ibd1, intime= filldate2, outtime=threeyearout, outdata=IT , save=N ) ;    
     
     ods excel options(sheet_name="DPP4i_SGLT2i IT" sheet_interval="NOW");
-    %analysis ( exposure= dpp4i , comparator= sglt2i, ana_name=main, type= IT, weight= smrw, induction= 180, latency= 180 , ibd_def= ibd1, intime= filldate2, outtime='31Dec2022'd , outdata=IT , save=N ) ;
+    %analysis ( exposure= dpp4i , comparator= sglt2i, ana_name=mITac, type= IT, weight= smrw, induction= 180, latency= 180 , ibd_def= ibd1, intime= filldate2, outtime='31Dec2022'd , outdata=IT , save=N ) ;
     ods excel options(sheet_name="DPP4i_SGLT2i IT 3y" sheet_interval="NOW");
-    %analysis ( exposure= dpp4i , comparator= sglt2i, ana_name=main, type= IT, weight= smrw, induction= 180, latency= 180 , ibd_def= ibd1, intime= filldate2, outtime=threeyearout, outdata=IT , save=N ) ;
+    %analysis ( exposure= dpp4i , comparator= sglt2i, ana_name=mITac3, type= IT, weight= smrw, induction= 180, latency= 180 , ibd_def= ibd1, intime= filldate2, outtime=threeyearout, outdata=IT , save=N ) ;
     
     ods excel options(sheet_name="DPP4i_SU AT" sheet_interval="NOW");
-    %analysis ( exposure= dpp4i , comparator= su, ana_name=main, type= AT, weight= smrw, induction= 180, latency= 180 , ibd_def= ibd1, intime= filldate2, outtime='31Dec2022'd , outdata=AT , save=N ) ;
+    %analysis ( exposure= dpp4i , comparator= su, ana_name=mATac, type= AT, weight= smrw, induction= 180, latency= 180 , ibd_def= ibd1, intime= filldate2, outtime='31Dec2022'd , outdata=AT , save=N ) ;
     ods excel options(sheet_name="DPP4i_SU AT 3y" sheet_interval="NOW");
-    %analysis ( exposure= dpp4i , comparator= su, ana_name=main, type= AT, weight= smrw, induction= 180, latency= 180 , ibd_def= ibd1, intime= filldate2, outtime=threeyearout, outdata=AT , save=N ) ;
+    %analysis ( exposure= dpp4i , comparator= su, ana_name=mATac3, type= AT, weight= smrw, induction= 180, latency= 180 , ibd_def= ibd1, intime= filldate2, outtime=threeyearout, outdata=AT , save=N ) ;
     
     ods excel options(sheet_name="DPP4i_TZD AT" sheet_interval="NOW");
-    %analysis ( exposure= dpp4i , comparator= tzd, ana_name=main, type= AT, weight= smrw, induction= 180, latency= 180 , ibd_def= ibd1, intime= filldate2, outtime='31Dec2022'd , outdata=AT , save=N ) ;
+    %analysis ( exposure= dpp4i , comparator= tzd, ana_name=mATac, type= AT, weight= smrw, induction= 180, latency= 180 , ibd_def= ibd1, intime= filldate2, outtime='31Dec2022'd , outdata=AT , save=N ) ;
     ods excel options(sheet_name="DPP4i_TZD AT 3y" sheet_interval="NOW");
-    %analysis ( exposure= dpp4i , comparator= tzd, ana_name=main, type= AT, weight= smrw, induction= 180, latency= 180 , ibd_def= ibd1, intime= filldate2, outtime=threeyearout, outdata=AT , save=N ) ;
+    %analysis ( exposure= dpp4i , comparator= tzd, ana_name=mATac3, type= AT, weight= smrw, induction= 180, latency= 180 , ibd_def= ibd1, intime= filldate2, outtime=threeyearout, outdata=AT , save=N ) ;
     
     ods excel options(sheet_name="DPP4i_SGLT2i AT" sheet_interval="NOW");
-    %analysis ( exposure= dpp4i , comparator= sglt2i, ana_name=main, type= AT, weight= smrw, induction= 180, latency= 180 , ibd_def= ibd1, intime= filldate2, outtime='31Dec2022'd , outdata=AT , save=N ) ;
+    %analysis ( exposure= dpp4i , comparator= sglt2i, ana_name=mATac, type= AT, weight= smrw, induction= 180, latency= 180 , ibd_def= ibd1, intime= filldate2, outtime='31Dec2022'd , outdata=AT , save=N ) ;
     ods excel options(sheet_name="DPP4i_SGLT2i AT 3y" sheet_interval="NOW");
-    %analysis ( exposure= dpp4i , comparator= sglt2i, ana_name=main, type= AT, weight= smrw, induction= 180, latency= 180 , ibd_def= ibd1, intime= filldate2, outtime=threeyearout, outdata=AT , save=N ) ;
+    %analysis ( exposure= dpp4i , comparator= sglt2i, ana_name=mATac3, type= AT, weight= smrw, induction= 180, latency= 180 , ibd_def= ibd1, intime= filldate2, outtime=threeyearout, outdata=AT , save=N ) ;
     
     ods excel options(sheet_name="Log_issues" sheet_interval="NOW");
 
     %CheckLog( ,ext=LOG,subdir=N,keyword=,exclude=,out=temp.Log_issues,pm=N,sound=N,relog=N,print=Y,to=,cc=,logdef=LOG,dirext=N,shadow=Y,abort=N,test=);
 
     ods excel close; 
+
+
+	data table2_mITac;
+	set a.out_dpp4ivsu_mITac_it     
+		a.out_dpp4ivtzd_mITac_it    
+		a.out_dpp4ivsglt2i_mITac_it;
+run;
+ ods rtf file="&toutPath./ACNU_Table2trim_mITac_&todaysdate..rtf";
+    proc print data=table2_mITac; 
+	var &exposure Nobs n_switch mediantime time_sum event_sum IBD_event_switchers IBD_events_censored IBD_hx_sum  rate crudehr &weight.HR;
+	run;
+ ods rtf close;
+
+ 	data table2_mITac3;
+	set a.out_dpp4ivsu_mITac3_it     
+		a.out_dpp4ivtzd_mITac3_it    
+		a.out_dpp4ivsglt2i_mITac3_it; 
+run;
+ ods rtf file="&toutPath./ACNU_Table2trim_mITac3_&todaysdate..rtf";
+    proc print data=table2_mITac3; 
+	var &exposure Nobs n_switch mediantime time_sum event_sum IBD_event_switchers IBD_events_censored IBD_hx_sum  rate crudehr &weight.HR;
+	run;
+ ods rtf close;
+
+ 	data table2_acnu_AT;
+	set a.out_dpp4ivsu_mATac_at     
+		a.out_dpp4ivtzd_mATac_at    
+		a.out_dpp4ivsglt2i_mATac_at
+		a.out_dpp4ivsu_mATac3_at     
+		a.out_dpp4ivtzd_mATac3_at    
+		a.out_dpp4ivsglt2i_mATac3_at; 
+run;
+ ods rtf file="&toutPath./ACNU_Table2trim_AT_&todaysdate..rtf";
+    proc print data=table2_acnu_AT; 
+	var &exposure Nobs n_switch mediantime time_sum event_sum IBD_event_switchers IBD_events_censored IBD_hx_sum  rate crudehr &weight.HR;
+	run;
+ ods rtf close;
+
 
 
 /* endregion //!SECTION */

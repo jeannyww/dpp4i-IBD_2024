@@ -50,37 +50,37 @@ option SASAUTOS=(SASAUTOS "D:\Externe Projekte\UNC\wangje\prog\sas\macros");
         insert into tmp_counts 
         set exclusion_num= &num_obs+1 ,
         long_text="Initiators after exclusions a through d (non-mutually exclusive)", 
-        dpp4i=(select count(*) from tmp1 where dpp4i=1 and not (excludeflag_prevalentuser=1 or excludeflag_samedayinitiator=1 or excludeflag_prefill2initiator=1 or filldate2=.)),
-        &comparator.= (select count(*) from tmp1 where dpp4i=0 and not (excludeflag_prevalentuser=1 or excludeflag_samedayinitiator=1 or excludeflag_prefill2initiator=1 or filldate2=.)),
-        dpp4i_diff= -(select count(*) from tmp1 where dpp4i=1 and (excludeflag_prevalentuser=1 or excludeflag_samedayinitiator=1 or excludeflag_prefill2initiator=1 or filldate2=.)),
-        &comparator._diff= -(select count(*) from tmp1 where dpp4i=0 and (excludeflag_prevalentuser=1 or excludeflag_samedayinitiator=1 or excludeflag_prefill2initiator=1 or filldate2=.));
+        dpp4i            =  (select count(*) from tmp1 where dpp4i=1 and not (excludeflag_prevalentuser=1 or excludeflag_samedayinitiator=1 or excludeflag_prefill2initiator=1 or filldate2=.)),
+        &comparator.     =  (select count(*) from tmp1 where dpp4i=0 and not (excludeflag_prevalentuser=1 or excludeflag_samedayinitiator=1 or excludeflag_prefill2initiator=1 or filldate2=.)),
+        dpp4i_diff       = -(select count(*) from tmp1 where dpp4i=1 and     (excludeflag_prevalentuser=1 or excludeflag_samedayinitiator=1 or excludeflag_prefill2initiator=1 or filldate2=.)),
+        &comparator._diff= -(select count(*) from tmp1 where dpp4i=0 and     (excludeflag_prevalentuser=1 or excludeflag_samedayinitiator=1 or excludeflag_prefill2initiator=1 or filldate2=.));
         /* were prevalent users of the comparator drug */
         insert into tmp_counts 
             set exclusion_num= &num_obs+2 ,
             long_text="a. Were prevalent users of &exposure. or &comparator. drug", 
-            dpp4i_diff= (select count(*) from tmp1 where dpp4i=1 and excludeflag_prevalentuser=1),
+            dpp4i_diff		 = (select count(*) from tmp1 where dpp4i=1 and excludeflag_prevalentuser=1),
             &comparator._diff= (select count(*) from tmp1 where dpp4i=0 and excludeflag_prevalentuser=1);
             /* initiated comparator drug on the same day */
             insert into tmp_counts 
                     set exclusion_num= &num_obs+3 ,
                         long_text="b. Dual initiator of &exposure. and &comparator.", 
-                        dpp4i_diff= (select count(*) from tmp1 where dpp4i=1 and excludeflag_samedayinitiator=1),
+                        dpp4i_diff		 = (select count(*) from tmp1 where dpp4i=1 and excludeflag_samedayinitiator=1),
                         &comparator._diff= (select count(*) from tmp1 where dpp4i=0 and excludeflag_samedayinitiator=1);
         /* filled comparator drug before second prescription */
         insert into tmp_counts 
         set exclusion_num= &num_obs+4 ,
         long_text="c. Filled drug before second prescription", 
-                dpp4i_diff= (select count(*) from tmp1 where dpp4i=1 and excludeflag_prefill2initiator=1),
+                dpp4i_diff       = (select count(*) from tmp1 where dpp4i=1 and excludeflag_prefill2initiator=1),
                 &comparator._diff= (select count(*) from tmp1 where dpp4i=0 and excludeflag_prefill2initiator=1);
                 /* had no second prescription */
                 insert into tmp_counts 
                 set exclusion_num= &num_obs+5,
                 long_text="d. Had no respecitve second &exposure. or &comparator. prescription", 
-                dpp4i_diff= (select count(*) from tmp1 where dpp4i=1 and filldate2=.),
+                dpp4i_diff       = (select count(*) from tmp1 where dpp4i=1 and filldate2=.),
                 &comparator._diff= (select count(*) from tmp1 where dpp4i=0 and filldate2=.);
                 
                 create table tmp2 as select * 
-                from (select * from tmp1 where dpp4i=1 and not (excludeflag_prevalentuser=1 or excludeflag_samedayinitiator=1 or excludeflag_prefill2initiator=1 or filldate2=.)) as a 
+                		 from (select * from tmp1 where dpp4i=1 and not (excludeflag_prevalentuser=1 or excludeflag_samedayinitiator=1 or excludeflag_prefill2initiator=1 or filldate2=.)) as a 
                 union all corr
                 select * from (select * from tmp1 where dpp4i=0 and not (excludeflag_prevalentuser=1 or excludeflag_samedayinitiator=1 or excludeflag_prefill2initiator=1 or filldate2=.)) as b; 
     quit;
@@ -92,47 +92,39 @@ option SASAUTOS=(SASAUTOS "D:\Externe Projekte\UNC\wangje\prog\sas\macros");
         insert into tmp_counts 
         set exclusion_num= &num_obs+1 ,
         long_text="Had the diagnosed diseases before the first prescription (a-f non-mutually exclusive)",
-        dpp4i= (select count(*) from tmp2 where dpp4i=1 and not (crohns_bl not in (., 0) or ucolitis_bl not in (., 0) or icomitis_bl not in (., 0) or DivCol_P_bl not in (., 0) )), 
-        dpp4i_diff= -(select count(*) from tmp2 where dpp4i=1 and (crohns_bl not in (., 0) or ucolitis_bl not in (., 0) or icomitis_bl not in (., 0) or DivCol_P_bl not in (., 0) )),
-        &comparator= (select count(*) from tmp2 where dpp4i=0 and not (crohns_bl not in (., 0) or ucolitis_bl not in (., 0) or icomitis_bl not in (., 0) or DivCol_P_bl not in (., 0) )),
-        &comparator._diff=- (select count(*) from tmp2 where dpp4i=0 and (crohns_bl not in (., 0) or ucolitis_bl not in (., 0) or icomitis_bl not in (., 0) or DivCol_P_bl not in (., 0)));
+        dpp4i	   		 =  (select count(*) from tmp2 where dpp4i=1 and not (crohns_bl not in (., 0) or ucolitis_bl not in (., 0) or icomitis_bl not in (., 0) or DivCol_P_bl not in (., 0) )), 
+        dpp4i_diff 		 = -(select count(*) from tmp2 where dpp4i=1 and 	 (crohns_bl not in (., 0) or ucolitis_bl not in (., 0) or icomitis_bl not in (., 0) or DivCol_P_bl not in (., 0) )),
+        &comparator		 =  (select count(*) from tmp2 where dpp4i=0 and not (crohns_bl not in (., 0) or ucolitis_bl not in (., 0) or icomitis_bl not in (., 0) or DivCol_P_bl not in (., 0) )),
+        &comparator._diff=- (select count(*) from tmp2 where dpp4i=0 and 	 (crohns_bl not in (., 0) or ucolitis_bl not in (., 0) or icomitis_bl not in (., 0) or DivCol_P_bl not in (., 0)));
         /*  a. Had Chron's disease */
         insert into tmp_counts 
         set exclusion_num= &num_obs+2 ,
         long_text="a. Had Crohn's disease", 
-        dpp4i_diff= (select count(*) from tmp2 where dpp4i=1 and crohns_bl not in (., 0)),
+        dpp4i_diff       = (select count(*) from tmp2 where dpp4i=1 and crohns_bl not in (., 0)),
         &comparator._diff= (select count(*) from tmp2 where dpp4i=0 and crohns_bl not in (., 0));
         /*  b. had Ulcerative colitis */
         insert into tmp_counts 
         set exclusion_num= &num_obs+3 ,
         long_text="b. Had Ulcerative colitis", 
-        dpp4i_diff= (select count(*) from tmp2 where dpp4i=1 and ucolitis_bl not in (., 0)),
+        dpp4i_diff		 = (select count(*) from tmp2 where dpp4i=1 and ucolitis_bl not in (., 0)),
         &comparator._diff= (select count(*) from tmp2 where dpp4i=0 and ucolitis_bl not in (., 0));
         /*  c. had ischemic colitis */
         insert into tmp_counts 
         set exclusion_num= &num_obs+4 ,
-                long_text="c. Had ischemic colitis", 
-                dpp4i_diff= (select count(*) from tmp2 where dpp4i=1 and icomitis_bl not in (., 0)),
-                &comparator._diff= (select count(*) from tmp2 where dpp4i=0 and icomitis_bl not in (., 0));
+        long_text="c. Had ischemic colitis", 
+        dpp4i_diff		 = (select count(*) from tmp2 where dpp4i=1 and icomitis_bl not in (., 0)),
+        &comparator._diff= (select count(*) from tmp2 where dpp4i=0 and icomitis_bl not in (., 0));
         /*  d. had diverticulitis or other colitis*/
-            insert into tmp_counts 
-            set exclusion_num= &num_obs+5 ,
-            long_text="d. Had diverticulitis or other colitis", 
-            dpp4i_diff= (select count(*) from tmp2 where dpp4i=1 and DivCol_P_bl not in (., 0)),
-            &comparator._diff= (select count(*) from tmp2 where dpp4i=0 and DivCol_P_bl not in (., 0));
-    /* e. had PCOS or gestational diabetes */
-    insert into tmp_counts
-    set exclusion_num= &num_obs+6,
-    long_text="e. Had polycystic ovary syndrome or gestational diabetes",   
-    dpp4i_diff= (select count(*) from tmp2 where dpp4i=1 and (PCOS_bl not in (., 0) or DiabGest_bl not in (., 0))),
-    &comparator._diff= (select count(*) from tmp2 where dpp4i=0 and (PCOS_bl not in (., 0) or DiabGest_bl not in (., 0)));
-
-    /* Adding pcos and diabgest in the exclusion table */
+        insert into tmp_counts 
+        set exclusion_num= &num_obs+5 ,
+        long_text="d. Had diverticulitis or other colitis", 
+        dpp4i_diff		 = (select count(*) from tmp2 where dpp4i=1 and DivCol_P_bl not in (., 0)),
+        &comparator._diff= (select count(*) from tmp2 where dpp4i=0 and DivCol_P_bl not in (., 0));        
     create table tmp3 as select * 
-    from (select * from tmp2 where dpp4i=1 and not (crohns_bl not in (., 0) or ucolitis_bl not in (., 0) or icomitis_bl not in (., 0) or DivCol_P_bl not in (., 0) or PCOS_bl not in (. , 0) or DiabGest_bl not in (., 0))) as a
+    from (select * from tmp2 where dpp4i=1 and not (crohns_bl not in (., 0) or ucolitis_bl not in (., 0) or icomitis_bl not in (., 0) or DivCol_P_bl not in (., 0) )) as a
     union all corr
     select * 
-    from (select * from tmp2 where dpp4i=0 and not (crohns_bl not in (., 0) or ucolitis_bl not in (., 0) or icomitis_bl not in (., 0) or DivCol_P_bl not in (., 0) or PCOS_bl not in (. , 0) or DiabGest_bl not in (., 0))) as b;
+    from (select * from tmp2 where dpp4i=0 and not (crohns_bl not in (., 0) or ucolitis_bl not in (., 0) or icomitis_bl not in (., 0) or DivCol_P_bl not in (., 0) )) as b;
     QUIT;
     
     PROC SQL  NOPRINT; 
@@ -183,9 +175,9 @@ option SASAUTOS=(SASAUTOS "D:\Externe Projekte\UNC\wangje\prog\sas\macros");
         insert into tmp_counts 
         set exclusion_num= &num_obs+1 ,
         long_text="Initiators with colectomy, colostomy, or ileostomy before the first prescription were excluded",
-        dpp4i= (select count(*) from tmp4 where dpp4i=1 and not (colile_bl not in (., 0) )), 
-        dpp4i_diff= -(select count(*) from tmp4 where dpp4i=1 and (colile_bl not in (., 0) )),
-        &comparator= (select count(*) from tmp4 where dpp4i=0 and not (colile_bl not in (., 0) )),
+        dpp4i			 =  (select count(*) from tmp4 where dpp4i=1 and not (colile_bl not in (., 0) )), 
+        dpp4i_diff		 = -(select count(*) from tmp4 where dpp4i=1 and (colile_bl not in (., 0) )),
+        &comparator		 =  (select count(*) from tmp4 where dpp4i=0 and not (colile_bl not in (., 0) )),
         &comparator._diff= -(select count(*) from tmp4 where dpp4i=0 and (colile_bl not in (., 0) ));
         create table tmp5 as select *
         from (select * from tmp4 where dpp4i=1 and not (colile_bl not in (., 0) )) as a
@@ -200,9 +192,9 @@ option SASAUTOS=(SASAUTOS "D:\Externe Projekte\UNC\wangje\prog\sas\macros");
             insert into tmp_counts
             set exclusion_num= &num_obs+1 ,
             long_text="Initiators before 2012 were excluded",
-            dpp4i= (select count(*) from tmp5 where dpp4i=1 and year(indexdate) not lt 2012),
-            dpp4i_diff= -(select count(*) from tmp5 where dpp4i=1 and year(indexdate) lt 2012),
-            &comparator= (select count(*) from tmp5 where dpp4i=0 and year(indexdate) not lt 2012),
+            dpp4i			 =  (select count(*) from tmp5 where dpp4i=1 and year(indexdate) not lt 2012),
+            dpp4i_diff		 = -(select count(*) from tmp5 where dpp4i=1 and year(indexdate) lt 2012),
+            &comparator		 =  (select count(*) from tmp5 where dpp4i=0 and year(indexdate) not lt 2012),
             &comparator._diff= -(select count(*) from tmp5 where dpp4i=0 and year(indexdate) lt 2012);
             create table tmp5 as select *
             from (select * from tmp4 where dpp4i=1 and year(indexdate) ge 2012) as a
@@ -219,10 +211,10 @@ option SASAUTOS=(SASAUTOS "D:\Externe Projekte\UNC\wangje\prog\sas\macros");
             insert into tmp_counts
             set exclusion_num= &num_obs+1 ,
             long_text="Initiators with history of CHF were excluded",
-            dpp4i= (select count(*) from tmp5 where dpp4i=1 and not (chf_bl not in (., 0))),
-            dpp4i_diff= -(select count(*) from tmp5 where dpp4i=1 and chf_bl not in (., 0)),
-            &comparator= (select count(*) from tmp5 where dpp4i=0 and not (chf_bl not in (., 0))),
-            &comparator._diff= -(select count(*) from tmp5 where dpp4i=0 and chf_bl not in (., 0));
+            dpp4i			 =  (select count(*) from tmp5 where dpp4i=1 and not (chf_bl not in (., 0))),
+            dpp4i_diff		 = -(select count(*) from tmp5 where dpp4i=1 and 	  chf_bl not in (., 0)),
+            &comparator		 =  (select count(*) from tmp5 where dpp4i=0 and not (chf_bl not in (., 0))),
+            &comparator._diff= -(select count(*) from tmp5 where dpp4i=0 and 	  chf_bl not in (., 0));
             create table tmp6 as select *
             from (select * from tmp5 where dpp4i=1 and chf_bl  in (., 0)) as a
             union all corr

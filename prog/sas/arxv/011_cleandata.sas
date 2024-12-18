@@ -253,7 +253,7 @@ data tmpRx_&drug._; set tmpRx_&drug.;
     daysimp=0, 
     maxDays=&maxDaysP,   
     multiclaim=max,
-    inds= %str(tmpRx_&drug._ (where=(&drug.=1))), 
+    inds= %str(tmpRx_&drug._ (where=(&drug.=1)), 
     idvar=id, 
     startenroll=startdt, 
     rxdate=rxdate, 
@@ -285,7 +285,7 @@ data tmpRx_&drug._; set tmpRx_&drug.;
 //SECTION - Demographics 
 \*===================================*/
 /* region */
-
+ 
 /* subsetting  demographic dataset  */
 %macro get_demog ( druglist );
 %do i=1 %to %sysfunc(countw(&druglist.));

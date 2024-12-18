@@ -38,9 +38,9 @@ option SASAUTOS=(SASAUTOS "D:\Externe Projekte\UNC\wangje\prog\sas\macros")
     RUN;
 
 	/*=================*\
-    Table 1 untrimmed (appendix) - added 6/5/2024
+    Table 1 untrimmed (appendix) - added 6/5/2024, 7/25/2024 Tian blocked this without weighted Table 1 and added untrimmed weighted Table 1 later
     \*=================*/
-    proc format; value &exposure. 0="&comparator." 1="&exposure."; run;
+   /* proc format; value &exposure. 0="&comparator." 1="&exposure."; run;
     proc datasets lib=work nolist nodetails; modify tmp1; 
         format &exposure. &exposure..  sex $sexf.  alcohol_cat $statusf. smoke_cat $statusf. hba1c_cat2  hba1cf. bmi_cat bmif.;
         run;
@@ -60,7 +60,7 @@ option SASAUTOS=(SASAUTOS "D:\Externe Projekte\UNC\wangje\prog\sas\macros")
     options orientation=landscape nodate nonumber nocenter;
     ods rtf file="&toutPath./ACNU_Table1_Untrimmed_&exposure._&comparator._&todaysdate..rtf";
     proc print data=tab1_untrimmed_&comparator. noobs label; var row &exposure &comparator sdiff; run;
-    ods rtf close;
+    ods rtf close;*/
 
 
 
@@ -160,6 +160,46 @@ option SASAUTOS=(SASAUTOS "D:\Externe Projekte\UNC\wangje\prog\sas\macros")
             plot density*value=pop / haxis=axis1 vaxis=axis2;
             run; quit;
             title;
+	/*=================*\
+    Table 1 untrimmed 7/25/2024 Tian added Table 1 untrimmed weighted Table 1.
+    \*=================*/
+    proc format; value &exposure. 0="&comparator." 1="&exposure."; run;
+    proc datasets lib=work nolist nodetails; modify psdsnnotrim; 
+        format &exposure. &exposure..  sex $sexf.  alcohol_cat $statusf. smoke_cat $statusf. hba1c_cat2  hba1cf. bmi_cat bmif.;
+        run;
+    %LET wgtvar=smrw;
+    %let ds = psdsnnotrim ;
+    %let colVar = &exposure.;
+    %let rowVars = &tablerowvars. ;
+    %LET outname = Table1notrim_&exposure._&comparator._&todaysdate.; 
+    options orientation=landscape nodate nonumber nocenter;
+    %table1(inds= &ds, colVar= &colVar, rowVars= &rowVars, wgtVar= ,       maxLevels=16, outfile=&outname, title=&outname, cellsize=5);
+
+    
+    title ;
+    data tab1_unwgt_&exposure.; 
+        set final; run;
+    proc datasets lib=work nolist nodetails; delete final; run; quit;
+    %table1(inds= &ds, colVar= &colVar, rowVars= &rowVars, wgtVar= &wgtvar, maxLevels=16, outfile=&outname, title=&outname, cellsize=5);
+    title;
+    data tab1_wgt_&exposure.; 
+        set final; run;
+    proc datasets lib=work nolist nodetails; delete final; run; quit;
+    /* Joining tables together */
+    proc sql;
+        create table table1notrim_&exposure.v&comparator. as
+        select a.row, a.&exposure., a.&comparator., a.sdiff label='Unwgted Stdz Diff',
+            b.&comparator._wgt, b.sdiff as sdiff_wgt label='Wgted Stdz Diff', a.order, a.roworder
+        from tab1_unwgt_&exposure. as a 
+        left join tab1_wgt_&exposure. (rename=(&comparator=&comparator._wgt)) as b
+            on a.row=b.row and a.order=b.order and a.roworder=b.roworder
+        order by order, roworder;
+    quit;
+    ods escapechar='~' ;
+    options orientation=landscape nodate nonumber nocenter;
+    ods rtf file="&toutPath./ACNU_Table1notrim_&exposure._&comparator._&todaysdate..rtf";
+    proc print data=table1notrim_&exposure.v&comparator. noobs label; var row &exposure &comparator sdiff &comparator._wgt sdiff_wgt; run;
+    ods rtf close;
     /*=================*\
     TRIMMING
     \*=================*/
@@ -311,7 +351,7 @@ option SASAUTOS=(SASAUTOS "D:\Externe Projekte\UNC\wangje\prog\sas\macros")
     %let rowVars = &tablerowvars. ;
     %LET outname = Table1_&exposure._&comparator._&todaysdate.; 
     options orientation=landscape nodate nonumber nocenter;
-    %table1(inds= &ds, colVar= &colVar, rowVars= &rowVars, wgtVar= , maxLevels=16, outfile=&outname, title=&outname, cellsize=5);
+    %table1(inds= &ds, colVar= &colVar, rowVars= &rowVars, wgtVar= , 	    maxLevels=16, outfile=&outname, title=&outname, cellsize=5);
     title ;
     data tab1_unwgt_&exposure.; 
         set final; run;
@@ -333,7 +373,7 @@ option SASAUTOS=(SASAUTOS "D:\Externe Projekte\UNC\wangje\prog\sas\macros")
     quit;
     ods escapechar='~' ;
     options orientation=landscape nodate nonumber nocenter;
-    ods rtf file="&toutPath./Table1trim_&exposure._&comparator._&todaysdate..rtf";
+    ods rtf file="&toutPath./ACNU_Table1trim_&exposure._&comparator._&todaysdate..rtf";
     proc print data=table1_&exposure.v&comparator. noobs label; var row &exposure &comparator sdiff &comparator._wgt sdiff_wgt; run;
     ods rtf close;
 
@@ -366,37 +406,53 @@ PS weighting with Abrahami covariates:
 *  %let basemodelvars= &basevars. &interactions. ;
 *  %let tablerowvars= &tablerowvarsi;
 
-%LET tablerowvarsi =   age  sex entry_year   bmi_cat2 alcohol_cat smoke_cat hba1c_Cat2  
+/*%LET tablerowvarsi =   age  sex entry_year   bmi_cat2 alcohol_cat smoke_cat hba1c_Cat2  
 		nephr_ever nerop_ever dret_ever mi_ever stroke_ever PerArtD_ever /* duration_metformin */
-		oAntGLP_1yrlookback dpp4i_1yrlookback su_1yrlookback TZD_1yrlookback sglt2i_1yrlookback
-		bigua_ever SU_ever TZD_ever insulin_ever 
-		/* other oad  */ dpp4i_ever sglt2i_ever prand_ever agluco_ever OAntGLP_ever  
-		/* other */ ass_ever allnsa_ever hrtopp_ever estr_ever gesta_ever pill_ever
-		/* Autoimmune */psorp_ever vasc_ever RhArth_Ever SjSy_Ever sLup_ever 
-		/* other drugs */num_nondmdrugs1yr num_nondmdrugs1yr_cat 
-        /* Added for Table 1 in the manuscript */
-        IBD_ever crohns_ever ucolitis_ever chf_ever;
+	/*	oAntGLP_1yrlookback dpp4i_1yrlookback su_1yrlookback TZD_1yrlookback sglt2i_1yrlookback
+		bigua_ever SU_ever TZD_ever insulin_ever */
+		/* other oad  */ /*dpp4i_ever sglt2i_ever prand_ever agluco_ever OAntGLP_ever */ 
+		/* other */ /*ass_ever allnsa_ever hrtopp_ever estr_ever gesta_ever pill_ever*/
+		/* Autoimmune */ /*psorp_ever vasc_ever RhArth_Ever SjSy_Ever sLup_ever */
+		/* other drugs */ /*num_nondmdrugs1yr num_nondmdrugs1yr_cat;*/
 
+%LET tablerowvarsi = age sex entry_year   bmi_cat2 alcohol_cat smoke_cat hba1c_Cat2 
+nephr_ever nerop_ever dret_ever mi_ever stroke_ever PerArtD_ever  
+
+oAntGLP_ever dpp4i_ever sglt2i_ever TZD_ever su_ever 
+
+bigua_ever insulin_ever prand_ever agluco_ever num_nondmdrugs1yr /*num_nondmdrugs1yr_cat*/
+ass_ever allnsa_ever hrtopp_ever estr_ever gesta_ever pill_ever 
+
+psorp_ever vasc_ever 
+RhArth_ever SjSy_ever sLup_ever 
+/*IBD_ever crohns_ever ucolitis_ever*/
+;
 
 %LET interactions =     /* add interaction */ ;
-%LET basevars_noint = 
-sex entry_year   
-bmi_cat2 alcohol_cat smoke_cat hba1c_Cat2 nephr_ever nerop_ever dret_ever mi_ever stroke_ever PerArtD_ever 
-bigua_ever insulin_ever prand_ever agluco_ever OAntGLP_ever ass_ever allnsa_ever hrtopp_ever estr_ever gesta_ever pill_ever psorp_ever 
-vasc_ever RhArth_Ever SjSy_Ever sLup_ever num_nondmdrugs1yr;
+/*%LET basevars_noint = sex entry_year   bmi_cat2 alcohol_cat smoke_cat hba1c_Cat2 nephr_ever nerop_ever dret_ever mi_ever stroke_ever PerArtD_ever 
+		bigua_ever insulin_ever prand_ever agluco_ever OAntGLP_ever ass_ever allnsa_ever hrtopp_ever estr_ever gesta_ever pill_ever psorp_ever 
+		vasc_ever RhArth_Ever SjSy_Ever sLup_ever num_nondmdrugs1yr;
 
 %LET basevars =  age|age  &basevars_noint;
-%let basemodelvars= &basevars. &interactions. ;
+%let basemodelvars= &basevars. &interactions. ;*/
 
-/* added for Tian Table 1 comments */
-/* %let tablerowvars= age &basevars_noint. IBD_ever crohns_ever ucolitis_ever chf_ever; */
+/*7/21/2024 Jeanny & Tian maybe using 1-year LL for drugs*/
+%LET basevars =  age|age
+sex entry_year   bmi_cat2 alcohol_cat smoke_cat hba1c_Cat2  
+nephr_ever nerop_ever dret_ever mi_ever stroke_ever PerArtD_ever 
+
+bigua_ever insulin_ever prand_ever agluco_ever num_nondmdrugs1yr 
+ass_ever allnsa_ever hrtopp_ever estr_ever gesta_ever pill_ever 
+
+psorp_ever vasc_ever 
+RhArth_ever SjSy_ever sLup_ever ;
+
+/*%let tablerowvars= age &basevars_noint;*/
 
 *  %let addedmodelvars= &addedDPP4ivSU;
 *  %LET exposure = dpp4i;
 *  %LET comparator = su;
 *  %LET refyear = 2015;
-
-
 
 %LET addedDPP4ivSU = oAntGLP_1yrlookback sglt2i_1yrlookback TZD_1yrlookback;
 %psweighting ( exposure= dpp4i ,

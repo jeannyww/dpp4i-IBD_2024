@@ -1382,7 +1382,15 @@ data IBD_events_censored (rename=(sum=IBD_events_censored));
         if &exposure=0 then output unexp;
     run;
     Data plot;
-    merge exp(rename=(risk=&exposure._risk risk_lower=&exposure._lower risk_upper=&exposure._upper)) unexp(rename=(risk=&comparator._risk risk_lower=&comparator._lower risk_upper=&comparator._upper));
+    merge 
+    exp(rename=(
+            risk=&exposure._risk 
+            risk_lower=&exposure._lower 
+            risk_upper=&exposure._upper)) 
+    unexp(rename=(
+            risk=&comparator._risk 
+            risk_lower=&comparator._lower 
+            risk_upper=&comparator._upper));
         by &timevar;
     run;
 /* Trigger ods excel to create a new sheet for the plots and main results */

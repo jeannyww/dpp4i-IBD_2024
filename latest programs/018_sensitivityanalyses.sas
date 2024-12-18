@@ -136,7 +136,7 @@ data tmp2; retain
  set tmp2; run;
 /* Manually check and printing those who contributed twice selected rows*/
 PROC SQL outobs=20 ;
-    select * from tmp2 order by a.id, a.indexdate;
+    select * from tmp2 order by id, indexdate;
 title; 
 /* Then run table1 macro unweighted those who were repeats only */
     proc format; value &exposure. 0="&comparator." 1="&exposure."; run;

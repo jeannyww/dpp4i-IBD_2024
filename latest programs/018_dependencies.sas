@@ -874,8 +874,7 @@ ods excel options(sheet_interval="NOW");
 //SECTION - ## 5. PS weighting adapted from 015_PSweighting.sas
 \*===================================*/
 /* region */
-%macro psweighting_Ab ( exposure , comparator , weight , addedmodelvars ,basemodelvars , 
-, refyear  , dat, save );
+%macro psweighting_Ab ( exposure , comparator , weight , addedmodelvars ,basemodelvars , refyear  , dat, save );
 
     data tmp1;
         set a.Abrahami_allmerged_&exposure._&comparator.;

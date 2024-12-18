@@ -72,7 +72,8 @@ option SASAUTOS=(SASAUTOS "D:\Externe Projekte\UNC\wangje\prog\sas\macros");
         create table new_abrahami_&comparator. as select distinct a.*,
         min(b.filldate2) as dpp4i_filldate2 format=date9. label='DATE OF SECOND FILL OF &exposure. DRUG for switch/augmentation'
         from _new_abrahami_&comparator. as a
-        LEFT JOIN temp.&exposure._useperiods as b on a.id=b.id and a.switchAugmentdate<=b.filldate2 /* <=a.discontDate */
+        LEFT JOIN temp.&exposure._useperiods as b 
+        on a.id=b.id and a.switchAugmentdate<=b.filldate2 /* <=a.discontDate */
         group by a.id, a.indexdate
         order by a.id, a.indexdate;
     QUIT;
@@ -92,7 +93,8 @@ option SASAUTOS=(SASAUTOS "D:\Externe Projekte\UNC\wangje\prog\sas\macros");
         create table new_abrahami_&exposure. as 
         select distinct a.*, min(b.indexdate) as switchAugmentdate format=date9. label='DATE OF SWITCH/AUGMENTATION'
         from tmp_exclude_&exposure. as a
-        LEFT JOIN temp.&comparator._useperiods as b on a.id=b.id and a.indexdate<=b.indexdate /*  <=a.discontDate */
+        LEFT JOIN temp.&comparator._useperiods as b 
+        on a.id=b.id and a.indexdate<=b.indexdate /*  <=a.discontDate */
         group by a.id, a.indexdate
         order by a.id, a.indexdate;
     QUIT;
@@ -475,6 +477,7 @@ QUIT;
         if chf_bl not in (., 0) then delete;
         %end;  
     RUN; 
+    
     /* adding counts for flowchart */
     data tmp_counts; 
         retain exclusion_num long_text dpp4i dpp4i_diff &comparator. &comparator._diff;
@@ -529,8 +532,8 @@ QUIT;
                 if ((&comparator.initiator_crohns_bl not in (., 0) or &comparator.initiator_ucolitis_bl not in (., 0) or &comparator.initiator_icomitis_bl not in (., 0) or &comparator.initiator_DivCol_P_bl not in (., 0) )) then delete_IBD=1;    
                 if ((&comparator.initiator_AminoS_bl not in (., 0) or &comparator.initiator_budeo_bl not in (., 0) or &comparator.initiator_tnfai_bl not in (., 0) or &comparator.initiator_otherimm_bl not in (., 0) )) or (&comparator.initiator_colile_bl not in (., 0) ) then delete_ibdmeds=1;
             END;
-        RUN;
-        PROC SQL NOPRINT; 
+    RUN;
+    PROC SQL NOPRINT; 
         select count(*) into :num_obs from tmp_counts;        
         * Had the following diagnosed diseases before the first prescription were excluded: (a-f non-mutually exclusive)) ;
         insert into tmp_counts 
@@ -1070,10 +1073,10 @@ data tmp2; set tmp2; where delete_IBD ne 1;RUN;
                 end;
         %end;
 
-        /* IT analysis  */
+        /*NOTE  IT analysis  */
         %if %upcase(&type) eq IT %then %do;
 
-        /* for dpp4i initiators who were prevalent users of the comparator */
+            /* for dpp4i initiators who were prevalent users of the comparator */
             else if &exposure =1 and excludeflag_prevalentuser eq 1 then do;
                 enddate= min(&ibd_def._dt, enddt, endstudy_dt,&outtime, death_dt, dbexit_dt,  LastColl_Dt);
                 if enddate>(&intime + &induction) and enddate=&ibd_def._dt and &ibd_def ne . then event=1; else event=0;

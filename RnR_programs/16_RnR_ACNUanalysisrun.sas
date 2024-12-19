@@ -25,7 +25,7 @@ options macrogen symbolgen mlogic mprint mcompile mcompilenote=all; option MAUTO
 option SASAUTOS=(SASAUTOS "D:\Externe Projekte\UNC\wangje\prog\sas\macros");
 %setup(programName=16_RnR_ACNUanalysisrun.sas, savelog=N, dataset=dataname);
 
-%include "D:\Externe Projekte\UNC\wangje\prog\sas\16_RnR_ACNUanalysisrun.sas";
+%include "D:\Externe Projekte\UNC\wangje\prog\sas\16_RnR_ACNUanalysismacro.sas";
 
 /*===================================*\
 //SECTION - Example of Macro Execution, edit this/ copy and paste and replace the macro parameters  to produce some of the sensitivity analyses, more code does need to be written for UC/CD outcomes but can be incorporated as a next step 
@@ -44,7 +44,7 @@ option SASAUTOS=(SASAUTOS "D:\Externe Projekte\UNC\wangje\prog\sas\macros");
 /* region */
 
 
-ods excel file="&toutpath.\RnR_MainACNU_Untrim_&todaysdate..xlsx"
+ods excel file="&toutpath.\RnR_MainACNU_Notrim_&todaysdate..xlsx"
 options (
 Sheet_interval="NONE"
 embedded_titles="NO"
@@ -81,7 +81,7 @@ embedded_footnotes="NO"
 		a.out_dpp4ivtzd_mITac_it    
 		a.out_dpp4ivsglt2i_mITac_it;
 run;
- ods rtf file="&toutPath./ACNU_Table2trim_mITac_&todaysdate..rtf";
+ ods rtf file="&toutPath./RnR_MainACNU_Notrim_IT_&todaysdate..rtf";
     proc print data=table2_mITac; 
 	var &exposure Nobs n_switch mediantime time_sum event_sum IBD_event_switchers IBD_events_censored IBD_hx_sum  rate crudehr &weight.HR;
 	run;
@@ -96,7 +96,7 @@ run;
 		a.out_dpp4ivtzd_mATac3_at    
 		a.out_dpp4ivsglt2i_mATac3_at; 
 run;
- ods rtf file="&toutPath./ACNU_Table2trim_AT_&todaysdate..rtf";
+ ods rtf file="&toutPath./RnR_MainACNU_Notrim_AT_&todaysdate..rtf";
     proc print data=table2_acnu_AT; 
 	var &exposure Nobs n_switch mediantime time_sum event_sum IBD_event_switchers IBD_events_censored IBD_hx_sum  rate crudehr &weight.HR;
 	run;
@@ -108,7 +108,7 @@ run;
 
 /* Sensitivity analysis 3: threeyearout */
 
-ods excel file="&toutpath.\RnR_SeAna3_3yrfu_&todaysdate..xlsx"
+ods excel file="&toutpath.\RnR_Se2_ACNU3yrNotrim_&todaysdate..xlsx"
 options (
 Sheet_interval="NONE"
 embedded_titles="NO"
@@ -138,10 +138,13 @@ data table2_mITac3;
 		a.out_dpp4ivtzd_mITac3_it    
 		a.out_dpp4ivsglt2i_mITac3_it; 
 run;
- ods rtf file="&toutPath./ACNU_Table2trim_mITac3_&todaysdate..rtf";
+ ods rtf file="&toutPath./RnR_Se2_ACNU3yrNotrim_mITac3_&todaysdate..rtf";
     proc print data=table2_mITac3; 
 	var &exposure Nobs n_switch mediantime time_sum event_sum IBD_event_switchers IBD_events_censored IBD_hx_sum  rate crudehr &weight.HR;
 	run;
  ods rtf close; 
 
 %CheckLog( ,ext=LOG,subdir=N,keyword=,exclude=,out=temp.Log_issues,pm=N,sound=N,relog=N,print=Y,to=,cc=,logdef=LOG,dirext=N,shadow=Y,abort=N,test=);
+
+
+

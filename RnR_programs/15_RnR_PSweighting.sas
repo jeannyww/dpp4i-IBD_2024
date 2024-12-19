@@ -19,6 +19,9 @@ Other details: CPRD-DPP4i project in collaboration with USB
 CHANGES: 2024-04-09 added for tablerowvarsi the comparator drugs for su_1yrlookback, TZD_1yrlookback, sglt2i_1yrlookback, dpp4i_1yrlookback to lines 342-343
 Date: 2024-04-09 
 Notes: revised for Tian and Virginia to run for new table 1 , line 343 
+
+Date: 2024-12-18
+Notes: line 224 Added a way to save the psdsnnotrim dataset for the main analysis
 ***************************************/
 option SASAUTOS=(SASAUTOS "D:\Externe Projekte\UNC\wangje\prog\sas\macros")
 		nofmterr pageno=1 fullstimer stimer stimefmt=z compress=yes 

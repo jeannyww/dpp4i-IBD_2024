@@ -60,9 +60,9 @@ outtime =  ,      *time which analysis fu ends, ie for AT: '31Dec2017'd, for ITT
  outdata =        *freetext for your chosen name of the outdata results ;
 )
 
-%analysis ( exposure= , comparator=, ana_name=, type=, weight=, induction=, latency=, ibd_def= , intime= , outtime= , outdata= );
+%ACNU_analysis ( exposure= , comparator=, ana_name=, type=, weight=, induction=, latency=, ibd_def= , intime= , outtime= , outdata= );
 
-%analysis ( exposure=  
+%ACNU_analysis ( exposure=  
 , comparator=
 , ana_name=
 , type=

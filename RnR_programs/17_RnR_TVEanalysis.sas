@@ -29,7 +29,7 @@ option SASAUTOS=(SASAUTOS "D:\Externe Projekte\UNC\wangje\prog\sas\macros");
 %setup(programName=017_mimickAbrahami.sas, savelog=n, dataset=dataname);
 
 * 1. Loads into the work library macros, global variables, specific to the Analysis a la Abrahami, not to be utilized for main analysis ACNU cohorts;
-%include "D:\Externe Projekte\UNC\wangje\prog\sas\17_dependencies.sas";
+%include "D:\Externe Projekte\UNC\wangje\prog\sas\17_RnR_TVEanalysismacros.sas";
 
 /*===================================*\
 //SECTION - 2. Get cohorts a la Abrahami, adapted from 012_createcohorts.sas
@@ -288,29 +288,31 @@ outtime =  ,      *time which analysis fu ends, ie for AT: '31Dec2017'd, for ITT
 %let label2=SU;
     
 
-ods excel file="&toutpath./se_Abrahami_T2compiled_&todaysdate..xlsx"
+ods excel file="&toutpath./RnR_MainSe1TVE_Notrim_IT_&todaysdate..xlsx"
 options (
     Sheet_interval="NONE"
     embedded_titles="NO"
     embedded_footnotes="NO"
 );
+    /* Exclude IBD=N */
     ods excel options(sheet_name="DPP4i_SU IT" sheet_interval="NOW");
-    %analysis_Ab (exclude_ibd=N, exposure= dpp4i , comparator= su, ana_name=mITtv, type= IT, weight= smrw, induction= 180, latency= 180 , ibd_def= ibd1, intime= filldate2, outtime='31Dec2022'd , outdata=IT , save=N ) ;
+    %TVE_analysis (pstrim=N, exclude_ibd=N, exposure= dpp4i , comparator= su, ana_name=mITtv, type= IT, weight= smrw, induction= 180, latency= 180 , ibd_def= ibd1, intime= filldate2, outtime='31Dec2022'd , outdata=IT , save=N ) ;
     
     ods excel options(sheet_name="DPP4i_TZD IT" sheet_interval="NOW");
-    %analysis_Ab (exclude_ibd=N, exposure= dpp4i , comparator= tzd, ana_name=mITtv, type= IT, weight= smrw, induction= 180, latency= 180 , ibd_def= ibd1, intime= filldate2, outtime='31Dec2022'd , outdata=IT , save=N ) ;
+    %TVE_analysis (pstrim=N, exclude_ibd=N, exposure= dpp4i , comparator= tzd, ana_name=mITtv, type= IT, weight= smrw, induction= 180, latency= 180 , ibd_def= ibd1, intime= filldate2, outtime='31Dec2022'd , outdata=IT , save=N ) ;
         
     ods excel options(sheet_name="DPP4i_SGLT2i IT" sheet_interval="NOW");
-    %analysis_Ab (exclude_ibd=N, exposure= dpp4i , comparator= sglt2i, ana_name=mITtv, type= IT, weight= smrw, induction= 180, latency= 180 , ibd_def= ibd1, intime= filldate2, outtime='31Dec2022'd , outdata=IT , save=N ) ;
+    %TVE_analysis (pstrim=N, exclude_ibd=N, exposure= dpp4i , comparator= sglt2i, ana_name=mITtv, type= IT, weight= smrw, induction= 180, latency= 180 , ibd_def= ibd1, intime= filldate2, outtime='31Dec2022'd , outdata=IT , save=N ) ;
     
+    /* Exclude IBD=Y */
     ods excel options(sheet_name="se_DPP4i_SU IT" sheet_interval="NOW");
-    %analysis_Ab (exclude_ibd=Y, exposure= dpp4i , comparator= su, ana_name=mITexIBtv, type= IT, weight= smrw, induction= 180, latency= 180 , ibd_def= ibd1, intime= filldate2, outtime='31Dec2022'd , outdata=IT , save=N) ;
+    %TVE_analysis (pstrim=N, exclude_ibd=Y, exposure= dpp4i , comparator= su, ana_name=mITexIBtv, type= IT, weight= smrw, induction= 180, latency= 180 , ibd_def= ibd1, intime= filldate2, outtime='31Dec2022'd , outdata=IT , save=N) ;
     
     ods excel options(sheet_name="se_DPP4i_TZD IT" sheet_interval="NOW");
-    %analysis_Ab (exclude_ibd=Y, exposure= dpp4i , comparator= tzd, ana_name=mITexIBtv, type= IT, weight= smrw, induction= 180, latency= 180 , ibd_def= ibd1, intime= filldate2, outtime='31Dec2022'd , outdata=IT , save=N ) ;
+    %TVE_analysis (pstrim=N, exclude_ibd=Y, exposure= dpp4i , comparator= tzd, ana_name=mITexIBtv, type= IT, weight= smrw, induction= 180, latency= 180 , ibd_def= ibd1, intime= filldate2, outtime='31Dec2022'd , outdata=IT , save=N ) ;
         
     ods excel options(sheet_name="se_DPP4i_SGLT2i IT" sheet_interval="NOW");
-    %analysis_Ab (exclude_ibd=Y, exposure= dpp4i , comparator= sglt2i, ana_name=mITexIBtv, type= IT, weight= smrw, induction= 180, latency= 180 , ibd_def= ibd1, intime= filldate2, outtime='31Dec2022'd , outdata=IT , save=N ) ;
+    %TVE_analysis (pstrim=N, exclude_ibd=Y, exposure= dpp4i , comparator= sglt2i, ana_name=mITexIBtv, type= IT, weight= smrw, induction= 180, latency= 180 , ibd_def= ibd1, intime= filldate2, outtime='31Dec2022'd , outdata=IT , save=N ) ;
     
     ods excel options(sheet_name="Log_issues" sheet_interval="NOW");
     %CheckLog( ,ext=LOG,subdir=N,keyword=,exclude=,out=temp.Log_issues,pm=N,sound=N,relog=N,print=Y,to=,cc=,logdef=LOG,dirext=N,shadow=Y,abort=N,test=);
@@ -328,35 +330,35 @@ data table2_primary_tve;
 		a.out_dpp4ivsglt2i_mITtv_it 
 		a.out_dpp4ivsglt2i_mITexIBtv_it;
 run;
- ods rtf file="&toutPath./Abrahami_Table2trim_mIT_&todaysdate..rtf";
+ ods rtf file="&toutPath./RnR_MainSe1TVE_Notrim_IT_&todaysdate..rtf";
     proc print data=table2_primary_tve; 
 	var &exposure Nobs n_switch mediantime time_sum event_sum IBD_event_switchers IBD_events_censored IBD_hx_sum  rate crudehr &weight.HR;
 	run;
  ods rtf close;
 
-ods excel file="&toutpath./se_Abrahami_T2compiled3yr_&todaysdate..xlsx"
+ods excel file="&toutpath./RnR_Se2_TVE3yrNotrim_IT_&todaysdate..xlsx"
 options (
     Sheet_interval="NONE"
     embedded_titles="NO"
     embedded_footnotes="NO"
 );
     ods excel options(sheet_name="DPP4i_SU IT3yr" sheet_interval="NOW");
-    %analysis_Ab (exclude_ibd=N, exposure= dpp4i , comparator= su,     ana_name=mIT3tv,     type= IT, weight= smrw, induction= 180, latency= 180 , ibd_def= ibd1, intime= filldate2, outtime=threeyearout , outdata=IT , save=N ) ;
+    %TVE_analysis (pstrim=N, exclude_ibd=N, exposure= dpp4i , comparator= su,     ana_name=mIT3tv,     type= IT, weight= smrw, induction= 180, latency= 180 , ibd_def= ibd1, intime= filldate2, outtime=threeyearout , outdata=IT , save=N ) ;
     
     ods excel options(sheet_name="DPP4i_TZD IT3yr" sheet_interval="NOW");
-    %analysis_Ab (exclude_ibd=N, exposure= dpp4i , comparator= tzd,    ana_name=mIT3tv,     type= IT, weight= smrw, induction= 180, latency= 180 , ibd_def= ibd1, intime= filldate2, outtime=threeyearout , outdata=IT , save=N ) ;
+    %TVE_analysis (pstrim=N, exclude_ibd=N, exposure= dpp4i , comparator= tzd,    ana_name=mIT3tv,     type= IT, weight= smrw, induction= 180, latency= 180 , ibd_def= ibd1, intime= filldate2, outtime=threeyearout , outdata=IT , save=N ) ;
         
     ods excel options(sheet_name="DPP4i_SGLT2i IT3yr" sheet_interval="NOW");
-    %analysis_Ab (exclude_ibd=N, exposure= dpp4i , comparator= sglt2i, ana_name=mIT3tv,     type= IT, weight= smrw, induction= 180, latency= 180 , ibd_def= ibd1, intime= filldate2, outtime=threeyearout , outdata=IT , save=N ) ;
+    %TVE_analysis (pstrim=N, exclude_ibd=N, exposure= dpp4i , comparator= sglt2i, ana_name=mIT3tv,     type= IT, weight= smrw, induction= 180, latency= 180 , ibd_def= ibd1, intime= filldate2, outtime=threeyearout , outdata=IT , save=N ) ;
     
     ods excel options(sheet_name="se_DPP4i_SU IT3yr" sheet_interval="NOW");
-    %analysis_Ab (exclude_ibd=Y, exposure= dpp4i , comparator= su,     ana_name=mIT3exIBtv, type= IT, weight= smrw, induction= 180, latency= 180 , ibd_def= ibd1, intime= filldate2, outtime=threeyearout , outdata=IT , save=N ) ;
+    %TVE_analysis (pstrim=N, exclude_ibd=Y, exposure= dpp4i , comparator= su,     ana_name=mIT3exIBtv, type= IT, weight= smrw, induction= 180, latency= 180 , ibd_def= ibd1, intime= filldate2, outtime=threeyearout , outdata=IT , save=N ) ;
     
     ods excel options(sheet_name="se_DPP4i_TZD IT3yr" sheet_interval="NOW");
-    %analysis_Ab (exclude_ibd=Y, exposure= dpp4i , comparator= tzd,    ana_name=mIT3exIBtv, type= IT, weight= smrw, induction= 180, latency= 180 , ibd_def= ibd1, intime= filldate2, outtime=threeyearout , outdata=IT , save=N ) ;
+    %TVE_analysis (pstrim=N, exclude_ibd=Y, exposure= dpp4i , comparator= tzd,    ana_name=mIT3exIBtv, type= IT, weight= smrw, induction= 180, latency= 180 , ibd_def= ibd1, intime= filldate2, outtime=threeyearout , outdata=IT , save=N ) ;
         
     ods excel options(sheet_name="se_DPP4i_SGLT2i IT3yr" sheet_interval="NOW");
-    %analysis_Ab (exclude_ibd=Y, exposure= dpp4i , comparator= sglt2i, ana_name=mIT3exIBtv, type= IT, weight= smrw, induction= 180, latency= 180 , ibd_def= ibd1, intime= filldate2, outtime=threeyearout , outdata=IT , save=N ) ;
+    %TVE_analysis (pstrim=N, exclude_ibd=Y, exposure= dpp4i , comparator= sglt2i, ana_name=mIT3exIBtv, type= IT, weight= smrw, induction= 180, latency= 180 , ibd_def= ibd1, intime= filldate2, outtime=threeyearout , outdata=IT , save=N ) ;
     
     ods excel options(sheet_name="Log_issues" sheet_interval="NOW");
     %CheckLog( ,ext=LOG,subdir=N,keyword=,exclude=,out=temp.Log_issues,pm=N,sound=N,relog=N,print=Y,to=,cc=,logdef=LOG,dirext=N,shadow=Y,abort=N,test=);
@@ -374,13 +376,17 @@ data table2_3yr;
 		a.out_dpp4ivsglt2i_mIT3tv_it 
 		a.out_dpp4ivsglt2i_mIT3exIBtv_it;
 run;
- ods rtf file="&toutPath./Abrahami_Table2trim_mIT3_&todaysdate..rtf";
+ ods rtf file="&toutPath./RnR_Se2_TVE3yrNotrim_IT_&todaysdate..rtf";
     proc print data=table2_3yr; 
 	var &exposure Nobs n_switch mediantime time_sum event_sum IBD_event_switchers IBD_events_censored IBD_hx_sum  rate crudehr &weight.HR;
 	run;
  ods rtf close;
+
+
+
+
 /* Added AT analysis  */
-ods excel file="&toutpath./se_Abrahami_T2compiled_AT_&todaysdate..xlsx"
+ods excel file="&toutpath./RnR_MainSe1TVE_Notrim_AT_&todaysdate..xlsx"
 options (
 Sheet_interval="NONE"
 embedded_titles="NO"
@@ -409,7 +415,7 @@ ods excel options(sheet_name="Log_issues" sheet_interval="NOW");
 
 ods excel close; 
 /* 3yr */
-ods excel file="&toutpath./se_Abrahami_T2compiled3yr_AT_&todaysdate..xlsx"
+ods excel file="&toutpath./RnR_Se2_TVE3yrNotrim_AT_&todaysdate..xlsx"
 options (
 Sheet_interval="NONE"
 embedded_titles="NO"

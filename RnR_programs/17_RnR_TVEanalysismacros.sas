@@ -32,6 +32,8 @@ Notes: Line 353 changed for inclusion of only _1yrlookback
 
 Date: 2024-12-17
 Notes: Reboot of this code for revision and re-analysis 
+Added saving the notrim psdsnnotrim cohort for the main analysis
+Line 1190- added macro option to use the trimmed vs the notrimmed dataset 
 
 ***************************************/
 options nofmterr pageno=1 fullstimer stimer stimefmt=z compress=yes ;
@@ -40,7 +42,7 @@ option SASAUTOS=(SASAUTOS "D:\Externe Projekte\UNC\wangje\prog\sas\macros");
 %setup(programName=017_dependencies, savelog=N, dataset=_NULL_);
 
 * When using %include, you will load all dependencies specific to the Analysis a la Abrahami, which are not to be generalized or utilized for main analysis ACNU that are true to the correct ACNU methods, so I decided not to include these macros as their own fileexist() in the main SASAUTOS macro library;
-
+ 
 /*===================================*\
 //SECTION - ## 2. Get cohorts a la Abrahami, adapted from 012_createcohorts.sas
 \*===================================*/
@@ -59,11 +61,11 @@ option SASAUTOS=(SASAUTOS "D:\Externe Projekte\UNC\wangje\prog\sas\macros");
         create table tmp_exclude_&comparator. /*all from comparator*/ as
         select distinct a.*,
         max( a.indexdate-&washoutp.<=b.discontDate and b.indexdate<a.indexdate ) as excludeflag_prevalentuser 
-																					label='EXCLUSION FLAG: prevalent user of &comparator. drug',
+                                    label='EXCLUSION FLAG: prevalent user of &comparator. drug',
         max(a.indexdate=b.indexdate) as excludeflag_samedayinitiator 
-																	label = 'EXCLUSION FLAG: dual  initiator of &comparator. drug',
+                                    label = 'EXCLUSION FLAG: dual  initiator of &comparator. drug',
         max(a.indexdate<b.indexdate<= a.filldate2) as excludeflag_prefill2initiator 
-																	label='EXCLUSION FLAG: pre-fill2 dual initiator of comparator drug before second fill date'
+                                    label='EXCLUSION FLAG: pre-fill2 dual initiator of comparator drug before second fill date'
         from temp.&comparator._useperiods /*generated from 11_cleandata.sas*/ (where=(newuse=1 and useperiod=1) rename=(reason=reason1)) as a
         left join temp.&exposure._useperiods as b
         on a.id=b.id group by a.id, a.indexdate;
@@ -1018,6 +1020,11 @@ title "tmp_counts"; proc print data=tmp_counts; run; title;
         call symput("untreated_995", trim(left(put(p99_5, BEST12.))));
         RUN;
     %put &untreated_max. &untreated_90. &untreated_95. &untreated_99. &untreated_995.;
+    /* Add flag for those who would have been trimmed to the notrim dataset  */
+    data psdsnnotrim; set psdsnnotrim; 
+        if &treated_005 <= ps <= &untreated_995 then trimming_flag=0; 
+        else trimming_flag=1;
+        RUN;
     /* check for treatment effect heterogeneity */
     data psdsn; set psdsnnotrim; 
         where &treated_005 <= ps <= &untreated_995;RUN;
@@ -1103,9 +1110,12 @@ title "tmp_counts"; proc print data=tmp_counts; run; title;
     proc univariate data=psdsn ; class &exposure.; var iptw siptw smrw smrwu ssmrwu; run; 
 
     /*=================*\
-    Save Point`
+    Save Point: Add saving the notrim dataset 
     \*=================*/
     %if &save. = Y %then %do;
+        /* Saving Notrimmed cohort for main analysis */
+        data a.Abrahami_Notrim_&exposure._&comparator.; set psdsnnotrim; run;
+        /* Saving PS trimmed cohort for sensitivity analyses */
         data a.Abrahami_PS_&exposure._&comparator.; set psdsn; run;
         /* Updating exclusions for PS trimming */
         PROC SQL; 
@@ -1173,17 +1183,24 @@ title "tmp_counts"; proc print data=tmp_counts; run; title;
 \*===================================*/
 /* region */
 
-%macro analysis_Ab (exclude_ibd, exposure , comparator , ana_name , type , weight , induction , latency , ibd_def , intime , outtime , outdata, save) / minoperator mindelimiter=',';
+%macro TVE_analysis (pstrim, exclude_ibd, exposure , comparator , ana_name , type , weight , induction , latency , ibd_def , intime , outtime , outdata, save) / minoperator mindelimiter=',';
 
     /*===================================*\
     //SECTION - Setting up data for analysis 
     \*===================================*/
-        %if &exclude_ibd. eq Y %then %do;
-            data dsn; set a.Abrahami_PS_&exposure._&comparator; where IBD_ever ne 1;RUN; 
-        %end;
-        %else %if &exclude_ibd. eq N %then %do;
-            data dsn; set a.Abrahami_PS_&exposure._&comparator; RUN;
-        %end;
+    %if %upcase(&pstrim.) eq Y %then %do; 
+        data dsn; set a.Abrahami_PS_&exposure._&comparator; run; 
+    %end; 
+    %else %if %upcase(&pstrim.) eq N %then %do; 
+        data dsn; set a.Abrahami_Notrim_&exposure._&comparator.; run; 
+    %end; 
+    /* Include or Exclude those with prevalent IBD */
+    %if &exclude_ibd. eq Y %then %do; *exclude==Y is main analysis;
+        data dsn; set dsn; where IBD_ever ne 1;RUN; 
+    %end;
+    %else %if &exclude_ibd. eq N %then %do;
+        data dsn; set dsn; RUN;
+    %end;
 
 data dsn; 
 		set dsn; 
@@ -1653,8 +1670,12 @@ ods listing style=mystyle gpath="&fOutPath.";
 
 PROC SGPLOT DATA = plot NOAUTOLEGEND DESCRIPTION=""; 
     YAXIS LABEL = 'Risk of Inflammatory Bowel Disease' LABELATTRS=(size=13pt weight=bold)  VALUES = (0 TO 0.0045 BY 0.0005) valueattrs=(size=12pt); 
-    XAXIS LABEL = 'Follow-up Time (years)' 		       LABELATTRS=(size=13pt weight=bold)  VALUES = (0 TO 4 BY 0.5)         valueattrs=(size=12pt); 
-
+    /* 2024-12-18 JW change from 4 to 9 years KM followup */
+ %if %upcase(&outtime.) eq threeyearout %then %do; 
+    XAXIS LABEL = 'Follow-up Time (years)' ABELATTRS=(size=13pt weight=bold)  VALUES = (0 TO 9 BY 0.5)       valueattrs=(size=12pt); 
+%end; %else %do;
+    XAXIS LABEL = 'Follow-up Time (years)' LABELATTRS=(size=13pt weight=bold)  VALUES = (0 TO 4 BY 0.5)       valueattrs=(size=12pt);
+%end;
     title height=12pt bold " ";
     step x=&timevar y=&exposure._risk /lineattrs=(color=blue pattern=1  thickness=2) name="&exposure.";
     step x=&timevar y=&exposure._lower/lineattrs=(color=blue pattern=20 thickness=1) name="&exposure._lower";
@@ -1708,7 +1729,7 @@ ods graphics off;
     run; 
 
 ods listing;
-%mend analysis_Ab;
+%mend TVE_analysis;
 
 /* endregion //!SECTION */
 

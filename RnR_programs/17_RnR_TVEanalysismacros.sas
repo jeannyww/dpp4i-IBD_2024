@@ -1732,11 +1732,3 @@ ods listing;
 %mend TVE_analysis;
 
 /* endregion //!SECTION */
-
-/*===================================*\
-//SECTION - ## Multivariable Cox model by Abrahami standards 
-* TODO - later
-\*===================================*/
-/* region */
-
-/* endregion //!SECTION */

@@ -75,7 +75,7 @@ option SASAUTOS=(SASAUTOS "D:\Externe Projekte\UNC\wangje\prog\sas\macros");
                 /* had no second prescription */
                 insert into tmp_counts 
                 set exclusion_num= &num_obs+5,
-                long_text="d. Had no respecitve second &exposure. or &comparator. prescription", 
+                long_text="d. Had no respective second &exposure. or &comparator. prescription", 
                 dpp4i_diff       = (select count(*) from tmp1 where dpp4i=1 and filldate2=.),
                 &comparator._diff= (select count(*) from tmp1 where dpp4i=0 and filldate2=.);
                 

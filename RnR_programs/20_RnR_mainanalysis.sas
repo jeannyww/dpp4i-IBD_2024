@@ -34,3 +34,58 @@ option SASAUTOS=(SASAUTOS "D:\Externe Projekte\UNC\wangje\prog\sas\macros");
 
 
 %CheckLog( ,ext=LOG,subdir=N,keyword=,exclude=,out=temp.Log_issues,pm=N,sound=N,relog=N,print=Y,to=,cc=,logdef=LOG,dirext=N,shadow=Y,abort=N,test=);
+
+
+/*===================================*\
+//SECTION - 6. Running the 'IT Analysis' a la Abrahami, adapted from 016_analysis.sas
+\*===================================*/
+/* region */
+/*---------------------------------------------------------------------
+%analysis_Ab(
+exposure =  ,   *exposure drug of interest: DPP4i;
+comparator =  , *comparator drug: SU TZD;    
+ana_name =  ,    *name of analysis: main, sensitivity, etc.;
+type =  ,        *type of analysis: AT (as treated) or ITT (initial treatment);
+weight =  ,       *type of weighting used: iptw, siptw, smrw, smrwu, ssmrwu;
+induction =  ,    *induction period for dz initiation 180d;
+latency =  ,      *latency period for dz detection 180d;
+ibd_def =  ,      *IBD definition used (free text, ie main definition); 
+intime =  ,       *time which analysis fu time will start, ie: entry (date of 2nd rx), initiation_date (date of 1st rx);
+outtime =  ,      *time which analysis fu ends, ie for AT: '31Dec2017'd, for ITT: oneyearout twoyearout threeyearout fouryearout;
+ outdata =        *freetext for your chosen name of the outdata results ;
+)
+
+%analysis_Ab ( exposure= , comparator=, ana_name=, type=, weight=, induction=, latency=, ibd_def= , intime= , outtime= , outdata= );
+
+%analysis_Ab ( exposure=  
+, comparator=
+, ana_name=
+, type=
+, weight=
+, induction=
+, latency=
+, ibd_def=
+, intime=  
+, outtime=  
+, outdata= );
+
+    
+    ---------------------------------------------------------------------*/
+    *%analysis_Ab (exclude_ibd=N, exposure= dpp4i , comparator= su, ana_name=main, type= IT, weight= smrw, induction= 180, latency= 180 , ibd_def= ibd1, intime= filldate2, outtime='31Dec2022'd , outdata=IT , save=N ) ;
+    *%analysis_Ab (exclude_ibd=N, exposure= dpp4i , comparator= su, ana_name=main, type= IT, weight= smrw, induction= 180, latency= 180 , ibd_def= ibd1, intime= filldate2, outtime=threeyearout , outdata=IT , save=N ) ;
+
+%let exclude_ibd=N;
+%let exposure= dpp4i;
+%let comparator= su;
+%let ana_name=mITtv;
+%let type= IT;
+%let weight= smrw;
+%let induction= 180;
+%let latency= 180;
+%let ibd_def= ibd1;
+%let intime= filldate2;
+%let outtime='31Dec2022'd;
+%let outdata=IT;
+%let save=N;
+%let label1=DPP4i;
+%let label2=SU;

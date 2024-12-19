@@ -38,6 +38,8 @@ option SASAUTOS=(SASAUTOS "D:\Externe Projekte\UNC\wangje\prog\sas\macros")
 
     data tmp1;
         set a.allmerged_&exposure._&comparator._1yrlb;
+        /* 2024-12-19: JHW add- Created new variable here that is time between first and second prescription */
+        diff_1st_2ndrx=; 
     RUN;
 
 	/*=================*\

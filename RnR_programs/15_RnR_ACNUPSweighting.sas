@@ -34,12 +34,12 @@ option SASAUTOS=(SASAUTOS "D:\Externe Projekte\UNC\wangje\prog\sas\macros")
 \*===================================*/
 /* region */
 
-%macro psweighting ( exposure , comparator , weight , addedmodelvars ,basemodelvars , tablerowvars, refyear  , dat, save );
+%macro psweighting ( exposure , comparator , weight , addedmodelvars ,basemodelvars , tablerowvars, refyear  , dat, save, ana_name);
 
     data tmp1;
         set a.allmerged_&exposure._&comparator._1yrlb;
         /* 2024-12-19: JHW add- Created new variable here that is time between first and second prescription */
-        diff_1st_2ndrx=; 
+        diff_1st_2ndrx= filldate2-indexdate; *check that it should be a positive number;
     RUN;
 
 	/*=================*\
@@ -143,7 +143,7 @@ option SASAUTOS=(SASAUTOS "D:\Externe Projekte\UNC\wangje\prog\sas\macros")
 
     /* Printing untrimmed psplot */
     goptions reset=all device=png targetdevice=tiff gsfname=grafout gsfmode=replace;
-    filename grafout "&foutpath./ACNU_&ana_name._psplot_&exposure._&comparator._&todaysdate..tiff";
+ ods pdf file="&foutpath.\psplot_ACNU_untrimmed_&ana_name.s_&exposure._&comparator._&todaysdate..pdf";
     symbol1 interpol=spline value=none line=1;
     symbol2 interpol=spline value=none line=2;
     axis1 order=(0 to 1 by 0.1) minor=none label=(a=0 j=c h=1.5 f=swiss 'Propensity Score') value=(h=1.1 f=swiss);
@@ -153,7 +153,7 @@ option SASAUTOS=(SASAUTOS "D:\Externe Projekte\UNC\wangje\prog\sas\macros")
         plot density*value=pop / haxis=axis1 vaxis=axis2;
         run; quit;
         title;
- 
+ ods pdf close;
 	/*=================*\
     Table 1 untrimmed 7/25/2024 Tian added Table 1 untrimmed weighted Table 1.
     \*=================*/
@@ -292,7 +292,7 @@ option SASAUTOS=(SASAUTOS "D:\Externe Projekte\UNC\wangje\prog\sas\macros")
         label value = "Propensity Score" pop="Treatment" density="Density";run;
     /* Printing trimmed psplot */
     goptions reset=all device=png targetdevice=tiff gsfname=grafout gsfmode=replace;
-    filename grafout "&foutpath./ACNU_&ana_name._psplot_trim_&exposure._&comparator._&todaysdate..tiff";
+   ods pdf file="&foutpath.\psplot_ACNU_trimmed_&ana_name._&exposure._&comparator._&todaysdate..pdf";
     symbol1 interpol=spline value=none line=1;
     symbol2 interpol=spline value=none line=2;
     axis1 order=(0 to 1 by 0.1) minor=none label=(a=0 j=c h=1.5 f=swiss 'Propensity Score') value=(h=1.1 f=swiss);
@@ -302,7 +302,7 @@ option SASAUTOS=(SASAUTOS "D:\Externe Projekte\UNC\wangje\prog\sas\macros")
         plot density*value=pop / haxis=axis1 vaxis=axis2;
         run; quit;
         title;
-   
+   ods pdf close;
     * check univariate analysis on weight variables by treatment status, check for extreme weights;
     proc univariate data=psdsn ; class &exposure.; var iptw siptw smrw smrwu ssmrwu; run; 
 
@@ -408,7 +408,11 @@ PS weighting with Abrahami covariates:
 		/* Autoimmune */ /*psorp_ever vasc_ever RhArth_Ever SjSy_Ever sLup_ever */
 		/* other drugs */ /*num_nondmdrugs1yr num_nondmdrugs1yr_cat;*/
 
-%LET tablerowvarsi = age sex entry_year   bmi_cat2 alcohol_cat smoke_cat hba1c_Cat2 
+%LET tablerowvarsi = age sex entry_year  
+
+diff_1st_2ndrx  /* added to table 1 rows, NOT in PS trimming model */
+
+bmi_cat2 alcohol_cat smoke_cat hba1c_Cat2 
 nephr_ever nerop_ever dret_ever mi_ever stroke_ever PerArtD_ever  
 
 oAntGLP_ever dpp4i_ever sglt2i_ever TZD_ever su_ever 
@@ -419,6 +423,7 @@ ass_ever allnsa_ever hrtopp_ever estr_ever gesta_ever pill_ever
 psorp_ever vasc_ever 
 RhArth_ever SjSy_ever sLup_ever 
 /*IBD_ever crohns_ever ucolitis_ever*/
+
 ;
 
 %LET interactions =     /* add interaction */ ;
@@ -455,7 +460,7 @@ addedmodelvars= &addedDPP4ivSU,
 basemodelvars= &basevars. &interactions. ,
 tablerowvars= &tablerowvarsi,
 refyear = 2015, 
-save= Y);
+save= Y, ana_name=1);
 
 %LET addedDPP4ivTZD = oAntGLP_1yrlookback sglt2i_1yrlookback su_1yrlookback chf_ever;
 %psweighting(exposure=dpp4i,

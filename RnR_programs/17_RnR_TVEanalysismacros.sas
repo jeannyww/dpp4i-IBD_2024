@@ -34,6 +34,7 @@ Date: 2024-12-17
 Notes: Reboot of this code for revision and re-analysis 
 Added saving the notrim psdsnnotrim cohort for the main analysis
 Line 1190- added macro option to use the trimmed vs the notrimmed dataset 
+Lines XX and XX- added code to exclude history of CHF for TZD and intiiator prior to 2012 for SGLT2i for the Abrahami untrimmed cohort dataset 
 
 ***************************************/
 options nofmterr pageno=1 fullstimer stimer stimefmt=z compress=yes ;
@@ -165,13 +166,13 @@ run;
 data final_Abrahami_&exposure._&comparator.;
  set merge_Abrahami_&exposure._&comparator.;
  by ID;
-     if (dpp4i=1 and num_rows=1) then switcher = 0 ; /*pure exposure*/
-else if (dpp4i=1 and num_rows=2) then switcher = 1; /*switcher*/
-else if (dpp4i=0 and filldate2>0 and filldate2< dpp4i_filldate2 and dpp4i_filldate2 ne . ) then switcher = 2;/*comparator switched to dpp4i later*/ 
-else if (dpp4i=0 and filldate2>0 and filldate2> dpp4i_filldate2 and dpp4i_filldate2 = . ) then switcher = 3;/*pure comparator w/ filldate2*/
-else if (dpp4i=0 and filldate2=. and dpp4i_filldate2 >0 and indexdate < dpp4i_filldate2)  then switcher = 4;/*early switcher  w/o filldate2*/
-else if (dpp4i=0 and filldate2=. and dpp4i_filldate2 >0 and indexdate >= dpp4i_filldate2) then switcher = 5;/*reverse switcher */
-else if (dpp4i=0 and filldate2=. and dpp4i_filldate2 =. ) then switcher = 6;/*pure comparator w/o filldate2*/
+if (dpp4i=1 and num_rows=1) then switcher = 0 ; /*pure exposure*/
+    else if (dpp4i=1 and num_rows=2) then switcher = 1; /*switcher*/
+    else if (dpp4i=0 and filldate2>0 and filldate2< dpp4i_filldate2 and dpp4i_filldate2 ne . ) then switcher = 2;/*comparator switched to dpp4i later*/ 
+    else if (dpp4i=0 and filldate2>0 and filldate2> dpp4i_filldate2 and dpp4i_filldate2 = . ) then switcher = 3;/*pure comparator w/ filldate2*/
+    else if (dpp4i=0 and filldate2=. and dpp4i_filldate2 >0 and indexdate < dpp4i_filldate2)  then switcher = 4;/*early switcher  w/o filldate2*/
+    else if (dpp4i=0 and filldate2=. and dpp4i_filldate2 >0 and indexdate >= dpp4i_filldate2) then switcher = 5;/*reverse switcher */
+    else if (dpp4i=0 and filldate2=. and dpp4i_filldate2 =. ) then switcher = 6;/*pure comparator w/o filldate2*/
 run;
 
 %if &exclude_reverseswitcher. eq N %then %do;
@@ -790,13 +791,14 @@ title "tmp_counts";proc print data=tmp_counts;run;title;
             &comparator._diff= -(select count(*) from tmp3 where dpp4i=0 and      chf_bl not in (., 0));
         QUIT;
     %end;  
+
     /* Check that the exclusion numbers match  */
     proc sql NOPRINT;
         insert into tmp_counts set
         long_text="Check: numrows of tmpana_&exposure._&comparator. = numrows of tmp_counts",
-        full= (select count(*) from tmpana_&exposure._&comparator./*not tmp3???*/);
+        full= (select count(*) from tmpana_&exposure._&comparator./*not tmp3? *JW- tmp3 was a temporary dataset only for counting exclusions per step*/);
         quit;
-title "tmp_counts"; proc print data=tmp_counts; run; title;
+    title "tmp_counts"; proc print data=tmp_counts; run; title;
 
     /* add a column of totals for full */
     data tmp_counts;
@@ -805,9 +807,21 @@ title "tmp_counts"; proc print data=tmp_counts; run; title;
         full=dpp4i+&comparator.;
         end;
         RUN; 
-title "tmp_counts"; proc print data=tmp_counts; run; title;
+    title "tmp_counts"; proc print data=tmp_counts; run; title;
  
     /* if save==y then save to analysis folder */
+    /* 2024-12-21: JW add : Make the exclusions on tmp3 before saving the dataset in line 815 */
+    data tmp3; set tmp3;   
+        /* exclude prior to 2012 for sglt2i */    
+        %if &comparator eq sglt2i %then %do; 
+        if year(indexdate) lt 2012 then delete; 
+        %end;
+        /* exclude heart failure for tzd */
+        %if &comparator eq tzd  %then %do;
+        if chf_bl not in (., 0) then delete;
+        %end;  
+    RUN; /* end add */
+
     %if &save=Y %then %do;
     data a.Abrahami_allmerged_&exposure._&comparator.;
         set  /*tmpana_&exposure._&comparator. 8/8/2024 Tian replaced this by tmp3 */ tmp3;
@@ -832,7 +846,19 @@ title "tmp_counts"; proc print data=tmp_counts; run; title;
 
     data tmp1;
         set a.Abrahami_allmerged_&exposure._&comparator.;
+        /* 2024-12-19: JHW add- Created new variable here that is time between first and second prescription */
+        diff_1st_2ndrx= filldate2-indexdate; *check that it should be a positive number;
+        /* 2024-12-21- JHW add, since [ a.Abrahami_allmerged_&exposure._&comparator.] includes prior to 2012 for sglt2i and those with chf for tzd cohorts */
+        /* exclude prior to 2012 for sglt2i */
+        %if %upcase(&comparator) eq SGLT2I %then %do; 
+            if year(indexdate) lt 2012 then delete; 
+        %end;
+        /* exclude heart failure for tzd */
+        %if %upcase(&comparator) eq TZD  %then %do;
+            if chf_bl not in (., 0) then delete;
+        %end;  
     RUN;
+
 %PUT &tablerowvars;
 %LET tablerowvars=&tablerowvarsi;
     /*=================*\
@@ -881,7 +907,7 @@ title "tmp_counts"; proc print data=tmp_counts; run; title;
         PROC MEANS DATA=psdsnnotrim(keep=ps) ;
             VAR ps;
             OUTPUT OUT=ps_mean MEAN=marg_prob;
-        RUN;
+        RUN; 
         
         DATA _NULL_;
             SET ps_mean;
@@ -937,7 +963,7 @@ title "tmp_counts"; proc print data=tmp_counts; run; title;
 
     /* Printing untrimmed psplot */
     goptions reset=all device=png targetdevice=tiff gsfname=grafout gsfmode=replace;
-    filename grafout "&foutpath./Abrahami_&ana_name._psplot_&exposure._&comparator._&todaysdate..tiff";
+    ods pdf file= "&foutpath./psplot_TVE_untrimmed_&exposure._&comparator._&todaysdate..pdf";
     symbol1 interpol=spline value=none line=1;
     symbol2 interpol=spline value=none line=2;
     axis1 order=(0 to 1 by 0.1) minor=none label=(a=0 j=c h=1.5 f=swiss 'Propensity Score') value=(h=1.1 f=swiss);
@@ -947,6 +973,7 @@ title "tmp_counts"; proc print data=tmp_counts; run; title;
         plot density*value=pop / haxis=axis1 vaxis=axis2;
         run; quit;
         title;
+    ods pdf close;
       
 	/*=================*\
     Table 1 untrimmed 7/20/2024 Tian added Table 1 untrimmed weighted Table 1.
@@ -1095,7 +1122,7 @@ title "tmp_counts"; proc print data=tmp_counts; run; title;
         label value = "Propensity Score" pop="Treatment" density="Density";run;
     /* Printing trimmed psplot */
     goptions reset=all device=png targetdevice=tiff gsfname=grafout gsfmode=replace;
-    filename grafout "&foutpath./Abrahami_&ana_name._psplot_trim_&exposure._&comparator._&todaysdate..tiff";
+    ods pdf file="&foutpath./psplot_TVE_trimmed_&exposure._&comparator._&todaysdate..pdf";
     symbol1 interpol=spline value=none line=1;
     symbol2 interpol=spline value=none line=2;
     axis1 order=(0 to 1 by 0.1) minor=none label=(a=0 j=c h=1.5 f=swiss 'Propensity Score') value=(h=1.1 f=swiss);
@@ -1105,6 +1132,7 @@ title "tmp_counts"; proc print data=tmp_counts; run; title;
         plot density*value=pop / haxis=axis1 vaxis=axis2;
         run; quit;
         title;
+    ods pdf close; 
  
     * check univariate analysis on weight variables by treatment status, check for extreme weights;
     proc univariate data=psdsn ; class &exposure.; var iptw siptw smrw smrwu ssmrwu; run; 
@@ -1183,7 +1211,7 @@ title "tmp_counts"; proc print data=tmp_counts; run; title;
 \*===================================*/
 /* region */
 
-%macro TVE_analysis (pstrim, exclude_ibd, exposure , comparator , ana_name , type , weight , induction , latency , ibd_def , intime , outtime , outdata, save) / minoperator mindelimiter=',';
+%macro TVE_analysis (pstrim, exclude_ibd, exposure , comparator , ana_name , type , weight , induction , latency , ibd_def , intime , outtime , numyears, outdata, save) / minoperator mindelimiter=',';
 
     /*===================================*\
     //SECTION - Setting up data for analysis 
@@ -1447,6 +1475,19 @@ data mediantimetmp(rename=(sum=time_sum));
     by &exposure; 
 run;
 
+/* 2024-12-23- JW adding another proc means for person-time followup among switchers: “Among DPP4i users, switchers and non-switchers had a median follow-up of XXX and YYY, respectively.” */
+proc means data= dsn  STACKODS N NMISS SUM MEAN STD MIN MAX Q1 MEDIAN Q3   ;
+where dpp4i=1;
+class  switcher ;
+var  time ; 
+run;
+
+proc means data= dsn  STACKODS N NMISS SUM MEAN STD MIN MAX Q1 MEDIAN Q3   ;
+where dpp4i=0;
+class  switcher ;
+var  time ; 
+run;
+
 /* count numbers of event  */
 ods output summary=event;
 Proc means data=dsn sum stackods ;
@@ -1670,9 +1711,9 @@ ods listing style=mystyle gpath="&fOutPath.";
 
 PROC SGPLOT DATA = plot NOAUTOLEGEND DESCRIPTION=""; 
     YAXIS LABEL = 'Risk of Inflammatory Bowel Disease' LABELATTRS=(size=13pt weight=bold)  VALUES = (0 TO 0.0045 BY 0.0005) valueattrs=(size=12pt); 
-    /* 2024-12-18 JW change from 4 to 9 years KM followup */
+    /* 2024-12-18 JW change to a macro variable &numyears for KM followup */
  %if %upcase(&outtime.) eq threeyearout %then %do; 
-    XAXIS LABEL = 'Follow-up Time (years)' ABELATTRS=(size=13pt weight=bold)  VALUES = (0 TO 9 BY 0.5)       valueattrs=(size=12pt); 
+    XAXIS LABEL = 'Follow-up Time (years)' ABELATTRS=(size=13pt weight=bold)  VALUES = (0 TO &numyears. BY 0.5)       valueattrs=(size=12pt); 
 %end; %else %do;
     XAXIS LABEL = 'Follow-up Time (years)' LABELATTRS=(size=13pt weight=bold)  VALUES = (0 TO 4 BY 0.5)       valueattrs=(size=12pt);
 %end;

@@ -87,7 +87,11 @@ Execute Macro PS weighting with Abrahami covariates:
 
 /*need to do All avaialbe lookback to replicate Abrahami study, also using 1year lookback has % is not close to % by Abrahami!!!!*/
 %LET tablerowvarsi = age
-sex entry_year   bmi_cat2 alcohol_cat smoke_cat hba1c_Cat2 
+sex entry_year   
+
+diff_1st_2ndrx  /* added to table 1 rows, NOT in PS trimming model */
+
+bmi_cat2 alcohol_cat smoke_cat hba1c_Cat2 
 nephr_ever nerop_ever dret_ever mi_ever stroke_ever PerArtD_ever  
 
 oAntGLP_ever dpp4i_ever sglt2i_ever TZD_ever su_ever 
@@ -136,8 +140,55 @@ basemodelvars= &basevars. &interactions. ,
 tablerowvars= &tablerowvarsi,
 refyear = 2015, 
 save= Y);
+/* Testing table comparing pre-switch to post-switch */
+/* Question about who are switchers compared to? */
+/* Based on switcher variable created in line 169 of %getCohort_Ab() macro from program 17_RnR_TVEanalysismacros */
+/* 
+0= pure exposure (dpp4i)
+1= switcher to dpp4i (dpp4i person time after switch from comparator)
+2= comparator (comparator person time before switching to DPP4i later) 
+3= pure comparator 
+4= early switcher w/o filldate2
+5= reverse switcher w/o filldate2
+6= pure comparator w/o filldate2*/
 
+PROC FREQ DATA=a.Abrahami_Notrim_dpp4i_su ;
+TABLES dpp4i*switcher /list missing; *switcher=0, 1,2, or 3;
+RUN;
+/* Web Table 4: Key patient characteristics between switchers and non-switchers in Dipeptidyl Peptidase-4 inhibitors (DPP4i) group in each comparison.*/
+data tmptable1; 
+    set a.Abrahami_Notrim_dpp4i_su; 
+    /* Among the same person, compare Preswitch (2) to post-switch (1) */
+        *where switcher in (1,2);
+    /* among dpp4i=1, Pure dpp4i (0) vs those who switched to dpp4i (1) */
+        where switcher in (0,1);
+    /* among dpp4i=0, Pure comparator (2) vs. comparator who later switched to dpp4i (3) */
+        *where dpp4i in (2,3);
+        format switcher switcherf.;
+    run;
+options orientation=landscape nodate nonumber nocenter;
+%table1(inds= tmptable1, 
+    colVar= switcher, /* or switcher */
+    rowVars= &tablerowvarsi, wgtVar= , maxLevels=16, outfile= , title= , cellsize=5);
+proc print data=final;
+run;
 
+/* switcher*/
+proc format;
+value switcherf
+0="puredpp4i"
+1="switcher";
+run;
+
+/*
+ods escapechar='~' ;
+ods rtf file="&toutPath./Tmpswitchtable_&todaysdate..rtf";
+    proc print data=final noobs label; 
+    var row &exposure &comparator sdiff &comparator._wgt sdiff_wgt; run;
+ods rtf close;
+*/
+
+/* 2024-12-21- rerun for untrimmed cohort  */
 %LET addedDPP4ivTZD = oAntGLP_1yrlookback sglt2i_1yrlookback su_1yrlookback chf_ever;
 %let addedmodelvars= &addedDPP4ivtzd;
 %psweighting_Ab(exposure=dpp4i,
@@ -149,6 +200,7 @@ tablerowvars=&tablerowvarsi chf_ever,
 refyear=2015,
 save=Y
 );
+
 
 %LET addedDPP4ivSGLT2i = oAntGLP_1yrlookback su_1yrlookback TZD_1yrlookback;
 %let addedmodelvars= &addedDPP4ivsglt2i;
@@ -165,6 +217,8 @@ save=Y
 /*7/13/2024 some errors identified*/
 %CheckLog( ,ext=LOG,subdir=N,keyword=,exclude=,out=temp.Log_issues,pm=N,sound=N,relog=N,print=Y,to=,cc=,logdef=LOG,dirext=N,shadow=Y,abort=N,test=);
 
+
+/* 2024-12-21- JW: Running the rest of the lines below are not necessary */
 ods _all_ close;
 goptions reset=all;quit;
 /* Print flowcharts and Tables */

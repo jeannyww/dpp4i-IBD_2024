@@ -79,7 +79,7 @@ outtime =  ,      *time which analysis fu ends, ie for AT: '31Dec2017'd, for ITT
 //SECTION - First- Creating Macro
 \*===================================*/
 
-%macro ACNU_analysis (pstrim, exposure , comparator , ana_name , type , weight , induction , latency , ibd_def , intime , outtime , outdata, save) / minoperator mindelimiter=',';
+%macro ACNU_analysis (pstrim, exposure , comparator , ana_name , type , weight , induction , latency , ibd_def , intime , outtime, numyears ,outdata, save) / minoperator mindelimiter=',';
 
 /*===================================*\
 //SECTION - Setting up data for analysis 
@@ -90,7 +90,7 @@ outtime =  ,      *time which analysis fu ends, ie for AT: '31Dec2017'd, for ITT
 %if %upcase(&pstrim.) eq Y %then %do; 
     /* TRIMMED for sensitivity analysis */
     data dsn; set a.PS_&exposure._&comparator._1yrlb; run;
-%end; %else %if %upcase(&psterim.) eq N %then %do;
+%end; %else %if %upcase(&pstrim.) eq N %then %do;
     /* Untrimmed for main analysis now */
     data dsn; set a.notrim_&exposure._&comparator._1yrlb; run;
 %end;
@@ -431,12 +431,8 @@ ods listing style=mystyle gpath="&fOutPath.";
 
 PROC SGPLOT DATA = plot NOAUTOLEGEND DESCRIPTION=""; 
 YAXIS LABEL = 'Risk of Inflammatory Bowel Disease' LABELATTRS=(size=13pt weight=bold)  VALUES = (0 TO 0.0045 BY 0.0005) valueattrs=(size=12pt); 
-/* 2024-12-18 JW change from 4 to 9 years KM followup */
- %if %upcase(&outtime.) eq threeyearout %then %do; 
-    XAXIS LABEL = 'Follow-up Time (years)' ABELATTRS=(size=13pt weight=bold)  VALUES = (0 TO 9 BY 0.5)       valueattrs=(size=12pt); 
-%end; %else %do;
-    XAXIS LABEL = 'Follow-up Time (years)' LABELATTRS=(size=13pt weight=bold)  VALUES = (0 TO 4 BY 0.5)       valueattrs=(size=12pt);
-%end;
+/* 2024-12-18 JW change to a variable &numyears for KM followup */
+    XAXIS LABEL = 'Follow-up Time (years)' LABELATTRS=(size=13pt weight=bold)  VALUES = (0 TO &numyears. BY 0.5)       valueattrs=(size=12pt); 
 
 title height=12pt bold " ";
 step x=&timevar y=&exposure._risk /lineattrs=(color=blue pattern=1  thickness=2) name="&exposure._risk";
@@ -490,6 +486,7 @@ run;
 
 ods listing;
 /* endregion //!SECTION */
+
 %mend ACNU_analysis;
 
 /* endregion //!SECTION */

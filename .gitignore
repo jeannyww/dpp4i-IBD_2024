@@ -9,5 +9,5 @@ test
 *.code-workspace
 tmp.txt
 *.txt
-.csv
-.xlsx
+*.csv
+*.xlsx

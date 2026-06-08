@@ -4,8 +4,6 @@ option MAUTOSOURCE;option SASAUTOS=(SASAUTOS "D:\Externe Projekte\UNC\wangje\pro
 
 %setup(programName=011_readdata_vp.sas, savelog=Y, dataset=dataname);
 
-
-
 %macro split_trt(drugList);
 	%LET N= %SYSFUNC(countw(&drugList));
 	%DO i=1 %TO &N; 

@@ -25,6 +25,102 @@ option MAUTOSOURCE;option SASAUTOS=(SASAUTOS "D:\Externe Projekte\UNC\wangje\pro
 
 %setup(programName=011_cleandata.sas, savelog=N, dataset=dataname);
 
+PROC FREQ DATA=dked;
+TABLES dkeidk /list missing;
+RUN;dkekd
+
+PROC SQL;
+    deidkd
+QUIT;
+ekdkde
+
+PROC SQL;
+    
+
+QUIT;   
+
+PROC SQL;
+PROC FREQ DATA=ekd;
+TABLES dkekd /list missing;
+RUN;    
+    
+QUIT;
+
+PROC FREQ DATA=your_dataset_name;
+TABLES vars /list missing;
+RUN;
+PROC SQL;
+    kswk
+QUIT;   
+
+\%let colvar= columnvariable;
+%let rowvar_contlist= rowvariables;
+%let dat= dataname;
+proc tabulate data= &dat. missing style={just=center};
+class &colvar.  / style=[just=left];
+classlev &colvar. / style=[cellwidth=120];
+var &rowvar_contList.   / style=[ just= left indent=25] ;
+table all={label="All"} &rowvar_contList. 
+(&colvar.  ={ style=[ just=center] }  ALL ) * * (Mean*f=5.1   STD*f=5.1 ) /  box ={label= "Characteristics"  }  NOCELLMERGE  ; run;
+footnote 'Mean and Standard Deviation are reported for continuous variables';
+
+%let colvar= columnvariable;
+%let rowvar_catlist= rowvariables;
+%let dat= dataname;
+proc tabulate data= &dat. missing style={just=center};
+class &colvar. &rowvar_catlist. / style=[just=left];
+classlev &rowvar_catlist. / style=[indent=25];
+classlev &colvar. / style=[cellwidth=120];
+var ;
+table all={label="All"} rowvar_catlist., 
+(&colvar.  ={ style=[ just=center] }  ALL ) * ( ( N *f=9.0 )  (colpctn={label="%"} )*f=5.1  )  / 
+box ={label= "Characteristics"  } NOCELLMERGE  ; run;
+footnote 'N and column % are reported for categorical variables';
+%let colvar= columnvariable;
+%let rowvar_catlist= rowvariables;
+%let dat= dataname;
+proc tabulate data= &dat. missing style={just=center};
+class &colvar. &rowvar_catlist. / style=[just=left];
+classlev &rowvar_catlist. / style=[indent=25];
+classlev &colvar. / style=[cellwidth=120];
+var ;
+table all={label="All"} rowvar_catlist., 
+(&colvar.  ={ style=[ just=center] }  ALL ) * ( ( N *f=9.0 )  (colpctn={label="%"} )*f=5.1  )  / 
+box ={label= "Characteristics"  } NOCELLMERGE  ; run;
+footnote 'N and column % are reported for categorical variables';
+%let colvar= columnvariable;
+%let rowvar_catlist= rowvariables;
+%let dat= dataname;
+proc tabulate data= &dat. missing style={just=center};
+class &colvar. &rowvar_catlist. / style=[just=left];
+classlev &rowvar_catlist. / style=[indent=25];
+classlev &colvar. / style=[cellwidth=120];
+var ;
+table all={label="All"} rowvar_catlist., 
+(&colvar.  ={ style=[ just=center] }  ALL ) * ( ( N *f=9.0 )  (colpctn={label="%"} )*f=5.1  )  / 
+box ={label= "Characteristics"  } NOCELLMERGE  ; run;
+footnote 'N and column % are reported for categorical variables';
+
+%let colvar= death_dt;
+%let rowvar_catlist= dleld;
+%let dat= dataname;
+proc tabulate data= &dat. missing style={just=center};
+class &colvar. &rowvar_catlist. / style=[just=left];
+classlev &rowvar_catlist. / style=[indent=25];
+classlev &colvar. / style=[cellwidth=120];
+var ;
+table all={label="All"} rowvar_catlist., 
+(&colvar.  ={ style=[ just=center] }  ALL ) * ( ( N *f=9.0 )  (colpctn={label="%"} )*f=5.1  )  / 
+box ={label= "Characteristics"  } NOCELLMERGE  ; run;
+footnote 'N and column % are reported for categorical variables';
+
+
+
+/*dkeidk*/
+*descrip;
+%macro dkeidk ( dkeidk , dkekdk );
+codehere
+%mend dkeidk;
 /*===================================*\
 //SECTION - Cleaning the Events file 
 \*===================================*/

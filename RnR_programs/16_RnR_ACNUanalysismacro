@@ -62,14 +62,15 @@ outdata, save) / minoperator mindelimiter=',';
 /* 2024-12-18 added option to use Trimmed vs Notrim dataset (these datasets were created in line 308 of program 15_RnR_PSweighting.sas) */
 %if %upcase(&pstrim.) eq Y %then %do; 
     /* TRIMMED for sensitivity analysis */
-    data dsn; set a.PS_&exposure._&comparator._1yrlb; run;
+    data dsn; set a.PS&ana_name._&exposure._&comparator._1yrlb; run;
 %end; %else %if %upcase(&pstrim.) eq N %then %do;
     /* Untrimmed for main analysis now */
-    data dsn; set a.notrim_&exposure._&comparator._1yrlb; run;
+    data dsn; set a.notrim&ana_name._&exposure._&comparator._1yrlb; run;
 %end;
 
 /* Create events and follow-up time */
 data dsn; set dsn;
+format dpp4i;
    /* where indexdate=date of first Rx, filldate2=date of 2nd rx, and for the main analysis the entry=date of 2nd prescription */
     oneyear  =&intime +365.25;
 	twoyear  =&intime +730.5;
@@ -153,7 +154,7 @@ data dsn; set dsn;
 		if deleteobs=1 or IBDdx_inductionperiod=1 or delete_zerofollowup=1 then delete_flag1=1;
 	else delete_flag1=0;
 		label delete_flag1="Flag for people who did not reach induction pd deleteobs=1 and IBDdx_inductionperiod=1 and delete_zerofollowup=1";
-
+format dpp4i;
 RUN;
 /*=================*\
 Update counts for exclusion
@@ -194,7 +195,8 @@ PROC SQL noprint;
     %end;
 QUIT;
 /*Make cuts to dataset*/
-data dsn; set dsn; if delete_flag1=1 then delete;run;
+data dsn; set dsn;format dpp4i;  if delete_flag1=1 then delete;
+ run;
 
 /*Then get numbers for the Results Table*/
 /*1) Get sum of IBD events by dpp4i*/
@@ -293,6 +295,7 @@ from o_drugdur;
 select * from o_drugdurf; quit;
 /*4) to 7) intermediate steps in %TVE_analysis() macro are not done in ACNU because not accounting for switching*/
 /*8) get Incident Rates*/
+data dsn; set dsn; format dpp4i; run;
 proc sort data=dsn; 
 	by &exposure; 
 run;

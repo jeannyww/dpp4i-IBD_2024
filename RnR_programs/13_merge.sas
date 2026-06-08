@@ -242,7 +242,7 @@ QUIT;
         /* creating additional variables for Table 1/rest of analysis */
         /* creating year of cohort entry */
         entry_year=year(time0);
-        /* ETOH */
+        /* ETOH */ 
         alcohol_cat='u';
         if alctime<365 then do;
             alcohol_cat=alc;

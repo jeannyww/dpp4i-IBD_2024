@@ -1,5 +1,5 @@
 /***************************************
-SAS file name: 16_RnR_ACNUanalysisrun.sas
+SAS file name: 18_RnR_Maintable4.sas
 
 Purpose: To run the ACNU analysis - main analysis, untrimmed cohort (ACNU)
 Contains: 
@@ -27,7 +27,7 @@ Notes: Separated the analysis macro from running the ACNU analysis program
 options nofmterr pageno=1 fullstimer stimer stimefmt=z compress=yes ;
 options macrogen symbolgen mlogic mprint mcompile mcompilenote=all; option MAUTOSOURCE;
 option SASAUTOS=(SASAUTOS "D:\Externe Projekte\UNC\wangje\prog\sas\macros");
-%setup(programName=16_RnR_ACNUanalysisrun.sas, savelog=N, dataset=dataname);
+%setup(programName=Maintable1, savelog=N, dataset=dataname);
 
 /* Load ACNU_analysis macro */
 %include "D:\Externe Projekte\UNC\wangje\prog\sas\16_RnR_ACNUanalysismacro.sas";

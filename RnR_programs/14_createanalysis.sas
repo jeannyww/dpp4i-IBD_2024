@@ -92,22 +92,16 @@ option SASAUTOS=(SASAUTOS "D:\Externe Projekte\UNC\wangje\prog\sas\macros");
         insert into tmp_counts 
         set exclusion_num= &num_obs+1 ,
         long_text="Had the diagnosed diseases before the first prescription (a-f non-mutually exclusive)",
-        dpp4i	   		 =  (select count(*) from tmp2 where dpp4i=1 and not (crohns_bl not in (., 0) or ucolitis_bl not in (., 0) or icomitis_bl not in (., 0) or DivCol_P_bl not in (., 0) or PCOS_bl not in (., 0) or DiabGest_bl not in (., 0))), 
-        dpp4i_diff 		 = -(select count(*) from tmp2 where dpp4i=1 and 	 (crohns_bl not in (., 0) or ucolitis_bl not in (., 0) or icomitis_bl not in (., 0) or DivCol_P_bl not in (., 0) or PCOS_bl not in (., 0) or DiabGest_bl not in (., 0))),
-        &comparator		 =  (select count(*) from tmp2 where dpp4i=0 and not (crohns_bl not in (., 0) or ucolitis_bl not in (., 0) or icomitis_bl not in (., 0) or DivCol_P_bl not in (., 0) or PCOS_bl not in (., 0) or DiabGest_bl not in (., 0))),
-        &comparator._diff=- (select count(*) from tmp2 where dpp4i=0 and 	 (crohns_bl not in (., 0) or ucolitis_bl not in (., 0) or icomitis_bl not in (., 0) or DivCol_P_bl not in (., 0) or PCOS_bl not in (., 0) or DiabGest_bl not in (., 0)));
-        /*  a. Had Chron's disease */
+        dpp4i	   		 =  (select count(*) from tmp2 where dpp4i=1 and not (ibd_i_bl not in (., 0) or icomitis_bl not in (., 0) or DivCol_P_bl not in (., 0) or PCOS_bl not in (., 0) or DiabGest_bl not in (., 0))), 
+        dpp4i_diff 		 = -(select count(*) from tmp2 where dpp4i=1 and 	 (ibd_i_bl not in (., 0) or icomitis_bl not in (., 0) or DivCol_P_bl not in (., 0) or PCOS_bl not in (., 0) or DiabGest_bl not in (., 0))),
+        &comparator		 =  (select count(*) from tmp2 where dpp4i=0 and not (ibd_i_bl not in (., 0) or icomitis_bl not in (., 0) or DivCol_P_bl not in (., 0) or PCOS_bl not in (., 0) or DiabGest_bl not in (., 0))),
+        &comparator._diff=- (select count(*) from tmp2 where dpp4i=0 and 	 (ibd_i_bl not in (., 0) or icomitis_bl not in (., 0) or DivCol_P_bl not in (., 0) or PCOS_bl not in (., 0) or DiabGest_bl not in (., 0)));
+        /*  a. Had Chron's, UC, or IBD disease */
         insert into tmp_counts 
         set exclusion_num= &num_obs+2 ,
-        long_text="a. Had Crohn's disease", 
-        dpp4i_diff       = (select count(*) from tmp2 where dpp4i=1 and crohns_bl not in (., 0)),
-        &comparator._diff= (select count(*) from tmp2 where dpp4i=0 and crohns_bl not in (., 0));
-        /*  b. had Ulcerative colitis */
-        insert into tmp_counts 
-        set exclusion_num= &num_obs+3 ,
-        long_text="b. Had Ulcerative colitis", 
-        dpp4i_diff		 = (select count(*) from tmp2 where dpp4i=1 and ucolitis_bl not in (., 0)),
-        &comparator._diff= (select count(*) from tmp2 where dpp4i=0 and ucolitis_bl not in (., 0));
+        long_text="a. b. Had history of IBD", 
+        dpp4i_diff       = (select count(*) from tmp2 where dpp4i=1 and ibd_I_bl not in (., 0)),
+        &comparator._diff= (select count(*) from tmp2 where dpp4i=0 and ibd_I_bl not in (., 0));
         /*  c. had ischemic colitis */
         insert into tmp_counts 
         set exclusion_num= &num_obs+4 ,
@@ -128,10 +122,10 @@ option SASAUTOS=(SASAUTOS "D:\Externe Projekte\UNC\wangje\prog\sas\macros");
         &comparator._diff= (select count(*) from tmp2 where dpp4i=0 and (PCOS_bl not in (., 0) or DiabGest_bl not in (., 0)));
     /* Excluding all the IBD history and pcos and diabgest in the exclusion table */
     create table tmp3 as select * 
-    from (select * from tmp2 where dpp4i=1 and not (crohns_bl not in (., 0) or ucolitis_bl not in (., 0) or icomitis_bl not in (., 0) or DivCol_P_bl not in (., 0) or PCOS_bl not in (. , 0) or DiabGest_bl not in (., 0))) as a
+    from (select * from tmp2 where dpp4i=1 and not (ibd_i_bl not in (., 0) or icomitis_bl not in (., 0) or DivCol_P_bl not in (., 0) or PCOS_bl not in (. , 0) or DiabGest_bl not in (., 0))) as a
     union all corr
     select * 
-    from (select * from tmp2 where dpp4i=0 and not (crohns_bl not in (., 0) or ucolitis_bl not in (., 0) or icomitis_bl not in (., 0) or DivCol_P_bl not in (., 0) or PCOS_bl not in (. , 0) or DiabGest_bl not in (., 0))) as b;
+    from (select * from tmp2 where dpp4i=0 and not (ibd_i_bl not in (., 0) or icomitis_bl not in (., 0) or DivCol_P_bl not in (., 0) or PCOS_bl not in (. , 0) or DiabGest_bl not in (., 0))) as b;
     QUIT;
     
     PROC SQL  NOPRINT; 
@@ -248,7 +242,7 @@ option SASAUTOS=(SASAUTOS "D:\Externe Projekte\UNC\wangje\prog\sas\macros");
 data tmpana_&exposure._&comparator.;
     set tmp1;
     if (excludeflag_prevalentuser eq 1 or excludeflag_samedayinitiator eq 1 or excludeflag_prefill2initiator eq 1 or filldate2 eq . ) then delete; 
-    if ((crohns_bl not in (., 0) or ucolitis_bl not in (., 0) or icomitis_bl not in (., 0) or DivCol_P_bl not in (., 0) )) then delete;
+    if ((ibd_i_bl not in (., 0) or icomitis_bl not in (., 0) or DivCol_P_bl not in (., 0) )) then delete;
     if ((AminoS_bl not in (., 0) or budeo_bl not in (., 0) or tnfai_bl not in (., 0) or otherimm_bl not in (., 0) )) or (colile_bl not in (., 0) ) then delete;
     /* delete PCOS and Diagbetes, 8/10/2024 Tian added  */
     if (PCOS_bl not in (., 0) or DiabGest_bl not in (., 0)) then delete;

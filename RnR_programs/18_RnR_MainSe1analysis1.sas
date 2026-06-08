@@ -28,16 +28,417 @@ options nofmterr pageno=1 fullstimer stimer stimefmt=z compress=yes ;
 options macrogen symbolgen mlogic mprint mcompile mcompilenote=all; option MAUTOSOURCE;
 option SASAUTOS=(SASAUTOS "D:\Externe Projekte\UNC\wangje\prog\sas\macros");
 %setup(programName=16_RnR_ACNUanalysisrun.sas, savelog=N, dataset=dataname);
+dm 'next explorer; detail';
 
 /* Load ACNU_analysis macro */
-%include "D:\Externe Projekte\UNC\wangje\prog\sas\16_RnR_ACNUanalysismacro.sas";
+%include "D:\Externe Projekte\UNC\wangje\prog\sas\macro_TVE_analysis.sas";
 /* Load TVE_analysis macro */
-%include "D:\Externe Projekte\UNC\wangje\prog\sas\17_RnR_TVEanalysismacros.sas";
+%include "D:\Externe Projekte\UNC\wangje\prog\sas\macro_ACNU_analysis.sas";
 
 /*===================================*\
-//SECTION - ACNU Main Analysis AT and IT untrimmed
+//SECTION - Sensitivity analysis: three years out
 \*===================================*/
 /* region */
+/* Lenth of x axis in years for the KM plot */
+%let num=3;
+
+%TVE_analysis (pstrim=N, exclude_ibd=Y, 
+exposure= dpp4i , comparator= su,
+ana_name=ITtv3yr, type= IT, 
+weight= smrw, induction= 180, latency= 180 ,
+ibd_def= ibd1, intime= filldate2, outtime=threeyearout ,
+numyears=&num, outdata=IT , save=N, data_prefix= ) ;proc print data=   tmp_counts;  
+run; 
+
+%ACNU_analysis (pstrim=N, 
+exposure= dpp4i , comparator= su, 
+ana_name=ITac3yr, type= IT, weight= smrw, 
+induction= 180, latency= 180 , 
+ibd_def= ibd1, intime= filldate2, outtime=threeyearout ,
+numyears=&num, outdata=IT , save=N, data_prefix= ) ;proc print data=   tmp_counts;  
+run; 
+/*Combining table for output of main results */
+%summarize(exposure=dpp4i, comparator=su);
+
+title ""; 
+%TVE_analysis (pstrim=N, exclude_ibd=Y, 
+exposure= dpp4i , comparator= tzd,
+ana_name=ITtv3yr, type= IT, 
+weight= smrw, induction= 180, latency= 180 ,
+ibd_def= ibd1, intime= filldate2, outtime=threeyearout ,
+numyears=&num, outdata=IT , save=N, data_prefix= ) ;proc print data=   tmp_counts;  
+run; 
+
+%ACNU_analysis (pstrim=N, 
+exposure= dpp4i , comparator= tzd, 
+ana_name=ITac3yr, type= IT, weight= smrw, 
+induction= 180, latency= 180 , 
+ibd_def= ibd1, intime= filldate2, outtime=threeyearout ,
+numyears=&num, outdata=IT , save=N, data_prefix= ) ;proc print data=   tmp_counts;  
+run; 
+/*Combining table for output of main results */
+%summarize(exposure=dpp4i, comparator=tzd);
+title ""; 
+
+%TVE_analysis (pstrim=N, exclude_ibd=Y, 
+exposure= dpp4i , comparator= sglt2i,
+ana_name=ITtv3yr, type= IT, 
+weight= smrw, induction= 180, latency= 180 ,
+ibd_def= ibd1, intime= filldate2, outtime=threeyearout ,
+numyears=&num, outdata=IT , save=N, data_prefix= ) ;proc print data=   tmp_counts;  
+run; 
+%ACNU_analysis (pstrim=N, 
+exposure= dpp4i , comparator= sglt2i, 
+ana_name=ITac3yr, type= IT, weight= smrw, 
+induction= 180, latency= 180 , 
+ibd_def= ibd1, intime= filldate2, outtime=threeyearout ,
+numyears=&num, outdata=IT , save=N, data_prefix= ) ;proc print data=   tmp_counts;  
+run; 
+/*Combining table for output of main results */
+%summarize(exposure=dpp4i, comparator=sglt2i);
+title ""; 
+
+/*===================================*\
+//SECTION - ACNU Main Analysis IT untrimmed
+\*===================================*/
+/* region */
+
+/*sglt2i*/
+%let num=9;
+%TVE_analysis (pstrim=N, exclude_ibd=Y, 
+exposure= dpp4i , comparator= sglt2i,
+ana_name=mITtv, type= IT, 
+weight= smrw, induction= 180, latency= 180 ,
+ibd_def= ibd1, intime= filldate2, outtime='31Dec2022'd ,
+numyears=&num, outdata=IT , save=N, data_prefix=) ;
+proc print data=   tmp_counts;  
+run; 
+%ACNU_analysis (pstrim=N, 
+exposure= dpp4i , comparator= sglt2i, 
+ana_name=mITac, type= IT, weight= smrw, 
+induction= 180, latency= 180 , 
+ibd_def= ibd1, intime= filldate2, outtime='31Dec2022'd ,
+numyears=&num, outdata=IT , save=N, data_prefix= ) ;
+proc print data=   tmp_counts;  
+run; 
+/*Combining table for output of main results */
+%summarize(exposure=dpp4i, comparator=sglt2i);
+title ""; 
+
+
+title ""; 
+
+/*TZD*/
+%let num=9;
+%TVE_analysis (pstrim=N, exclude_ibd=Y, 
+exposure= dpp4i , comparator= tzd,
+ana_name=mITtv, type= IT, 
+weight= smrw, induction= 180, latency= 180 ,
+ibd_def= ibd1, intime= filldate2, outtime='31Dec2022'd ,
+numyears=&num, outdata=IT , save=N, data_prefix=) ;
+proc print data=   tmp_counts;  
+run; 
+%ACNU_analysis (pstrim=N, 
+exposure= dpp4i , comparator= tzd, 
+ana_name=mITac, type= IT, weight= smrw, 
+induction= 180, latency= 180 , 
+ibd_def= ibd1, intime= filldate2, outtime='31Dec2022'd ,
+numyears=&num, outdata=IT , save=N, data_prefix= ) ;
+proc print data=   tmp_counts;  
+run; 
+/*Combining table for output of main results */
+%summarize(exposure=dpp4i, comparator=tzd);
+title ""; 
+
+
+/*SU*/
+%let num=9;
+%TVE_analysis (pstrim=N, exclude_ibd=Y, 
+exposure= dpp4i , comparator= SU,
+ana_name=mITtv, type= IT, 
+weight= smrw, induction= 180, latency= 180 ,
+ibd_def= ibd1, intime= filldate2, outtime='31Dec2022'd ,
+numyears=&num, outdata=IT , save=N, data_prefix=) ;
+proc print data=   tmp_counts;  
+run; 
+%ACNU_analysis (pstrim=N, 
+exposure= dpp4i , comparator= SU, 
+ana_name=mITac, type= IT, weight= smrw, 
+induction= 180, latency= 180 , 
+ibd_def= ibd1, intime= filldate2, outtime='31Dec2022'd ,
+numyears=&num, outdata=IT , save=N, data_prefix= ) ;
+proc print data=   tmp_counts;  
+run; 
+/*Combining table for output of main results */
+%summarize(exposure=dpp4i, comparator=SU);
+title ""; 
+
+
+/*===================================*\
+main analysis AT untrimmed
+\*===================================*/
+
+title "NO pstrim"; 
+%TVE_analysis (pstrim=N, exclude_ibd=Y, 
+exposure= dpp4i , comparator= tzd,
+ana_name=mATtv, type= AT, 
+weight= smrw, induction= 180, latency= 180 ,
+ibd_def= ibd1, intime= filldate2, outtime='31Dec2022'd ,
+numyears=&num, outdata=AT , save=N ) ;
+%ACNU_analysis (pstrim=N, 
+exposure= dpp4i , comparator= tzd, 
+ana_name=mATac, type= AT, weight= smrw, 
+induction= 180, latency= 180 , 
+ibd_def= ibd1, intime= filldate2, outtime='31Dec2022'd ,
+numyears=&num, outdata=AT , save=N ) ;
+/*Combining table for output of main results */
+%summarize(exposure=dpp4i, comparator=tzd);
+title ""; 
+title "NO pstrim"; 
+%TVE_analysis (pstrim=N, exclude_ibd=Y, 
+exposure= dpp4i , comparator= su,
+ana_name=mATtv, type= AT, 
+weight= smrw, induction= 180, latency= 180 ,
+ibd_def= ibd1, intime= filldate2, outtime='31Dec2022'd ,
+numyears=&num, outdata=AT , save=N ) ;
+%ACNU_analysis (pstrim=N, 
+exposure= dpp4i , comparator= su, 
+ana_name=mATac, type= AT, weight= smrw, 
+induction= 180, latency= 180 , 
+ibd_def= ibd1, intime= filldate2, outtime='31Dec2022'd ,
+numyears=&num, outdata=AT , save=N ) ;
+/*Combining table for output of main results */
+%summarize(exposure=dpp4i, comparator=su);
+title ""; 
+title "NO pstrim"; 
+%TVE_analysis (pstrim=N, exclude_ibd=Y, 
+exposure= dpp4i , comparator= sglt2i,
+ana_name=mATtv, type= AT, 
+weight= smrw, induction= 180, latency= 180 ,
+ibd_def= ibd1, intime= filldate2, outtime='31Dec2022'd ,
+numyears=&num, outdata=AT , save=N ) ;
+%ACNU_analysis (pstrim=N, 
+exposure= dpp4i , comparator= sglt2i, 
+ana_name=mATac, type= AT, weight= smrw, 
+induction= 180, latency= 180 , 
+ibd_def= ibd1, intime= filldate2, outtime='31Dec2022'd ,
+numyears=&num, outdata=AT , save=N ) ;
+/*Combining table for output of main results */
+%summarize(exposure=dpp4i, comparator= sglt2i);
+
+
+title "YES ps trim"; 
+%ACNU_analysis (pstrim=Y, 
+exposure= dpp4i , comparator= sglt2i, 
+ana_name=mATac, type= AT, weight= smrw, 
+induction= 180, latency= 180 , 
+ibd_def= ibd1, intime= filldate2, outtime='31Dec2022'd ,
+numyears=&num, outdata=AT , save=N ) ;
+/*Combining table for output of main results */
+%summarize(exposure=dpp4i, comparator= sglt2i);
+title ""; 
+
+/*===================================*\
+sensitivity AT analysis with extended censoring criteria
+extended censoring criteria in as-treated ACNU analyses to include patients starting SU, TZD, or SGLT2i (for non-comparator drug) during follow-up
+\*===================================*/
+%LET num = 9;
+title "NO pstrim extended censoring AT dpp4 v tzd"; 
+%ACNU_analysis (pstrim=N, 
+exposure= dpp4i , comparator= tzd, 
+ana_name=mATac, type= ATEXT, weight= smrw, 
+induction= 180, latency= 180 , 
+ibd_def= ibd1, intime= filldate2, outtime='31Dec2022'd ,
+numyears=&num, outdata=ATEXT , save=N ) ;
+/*Combining table for output of main results */
+%summarize(exposure=dpp4i, comparator=tzd);
+title ""; 
+title "NO pstrim extended censoring AT dpp4 v su"; 
+%ACNU_analysis (pstrim=N, 
+exposure= dpp4i , comparator= su, 
+ana_name=mATac, type= ATEXT, weight= smrw, 
+induction= 180, latency= 180 , 
+ibd_def= ibd1, intime= filldate2, outtime='31Dec2022'd ,
+numyears=&num, outdata=ATEXT , save=N ) ;
+/*Combining table for output of main results */
+%summarize(exposure=dpp4i, comparator=su);
+title ""; 
+title "NO pstrim extended censoring AT dpp4 v sglt2i";  
+%ACNU_analysis (pstrim=N, 
+exposure= dpp4i , comparator= sglt2i, 
+ana_name=mATac, type= ATEXT, weight= smrw, 
+induction= 180, latency= 180 , 
+ibd_def= ibd1, intime= filldate2, outtime='31Dec2022'd ,
+numyears=&num, outdata=ATEXT , save=N ) ;
+/*Combining table for output of main results */
+%summarize(exposure=dpp4i, comparator= sglt2i);
+/*===================================*\
+main analysis IT threeyearout
+\*===================================*/
+
+%let num=3;
+%TVE_analysis (pstrim=N, exclude_ibd=Y, 
+exposure= dpp4i , comparator= tzd,
+ana_name=mIT3tv, type= IT, 
+weight= smrw, induction= 180, latency= 180 ,
+ibd_def= ibd1, intime= filldate2, outtime=threeyearout ,
+numyears=&num, outdata= IT , save=N ) ;
+%ACNU_analysis (pstrim=N, 
+exposure= dpp4i , comparator= tzd, 
+ana_name=mITac3, type= IT, weight= smrw, 
+induction= 180, latency= 180 , 
+ibd_def= ibd1, intime= filldate2, outtime=threeyearout ,
+numyears=&num, outdata= IT , save=N ) ;
+/*Combining table for output of main results */
+%summarize(exposure=dpp4i, comparator=tzd);
+
+
+title ""; 
+%TVE_analysis (pstrim=N, exclude_ibd=Y, 
+exposure= dpp4i , comparator= su,
+ana_name=mIT3tv, type= IT, 
+weight= smrw, induction= 180, latency= 180 ,
+ibd_def= ibd1, intime= filldate2, outtime=threeyearout ,
+numyears=&num, outdata= IT , save=N ) ;
+%ACNU_analysis (pstrim=N, 
+exposure= dpp4i , comparator= su, 
+ana_name=mITac3, type= IT, weight= smrw, 
+induction= 180, latency= 180 , 
+ibd_def= ibd1, intime= filldate2, outtime=threeyearout ,
+numyears=&num, outdata= IT , save=N ) ;
+/*Combining table for output of main results */
+%summarize(exposure=dpp4i, comparator=su);
+title ""; 
+title ""; 
+%TVE_analysis (pstrim=N, exclude_ibd=Y, 
+exposure= dpp4i , comparator= sglt2i,
+ana_name=mIT3tv, type= IT, 
+weight= smrw, induction= 180, latency= 180 ,
+ibd_def= ibd1, intime= filldate2, outtime=threeyearout ,
+numyears=&num, outdata= IT , save=N ) ;
+%ACNU_analysis (pstrim=N, 
+exposure= dpp4i , comparator= sglt2i, 
+ana_name=mITac3, type= IT, weight= smrw, 
+induction= 180, latency= 180 , 
+ibd_def= ibd1, intime= filldate2, outtime=threeyearout ,
+numyears=&num, outdata= IT , save=N ) ;
+/*Combining table for output of main results */
+%summarize(exposure=dpp4i, comparator= sglt2i);
+title ""; 
+
+/*===================================*\
+//SECTION - ACNU IT untrimmed INCLIBD Exclude_IBD=N
+\*===================================*/
+/* region */
+
+%let num=9;
+%TVE_analysis (pstrim=N, exclude_ibd=N, 
+exposure= dpp4i , comparator= sglt2i,
+ana_name=mITinclIBtv, type= IT, 
+weight= smrw, induction= 180, latency= 180 ,
+ibd_def= ibd1, intime= filldate2, outtime='31Dec2022'd ,
+numyears=&num, outdata=IT , save=N ) ;
+%ACNU_analysis (pstrim=N, 
+exposure= dpp4i , comparator= sglt2i, 
+ana_name=mITinclIBac, type= IT, weight= smrw, 
+induction= 180, latency= 180 , 
+ibd_def= ibd1, intime= filldate2, outtime='31Dec2022'd ,
+numyears=&num, outdata=IT , save=N ) ;
+/*Combining table for output of main results */
+%summarize(exposure=dpp4i, comparator=sglt2i);
+title ""; 
+
+%TVE_analysis (pstrim=N, exclude_ibd=N, 
+exposure= dpp4i , comparator= tzd,
+ana_name=mITinclIBtv, type= IT, 
+weight= smrw, induction= 180, latency= 180 ,
+ibd_def= ibd1, intime= filldate2, outtime='31Dec2022'd ,
+numyears=&num, outdata=IT , save=N ) ;
+%ACNU_analysis (pstrim=N, 
+exposure= dpp4i , comparator= tzd, 
+ana_name=mITinclIBac, type= IT, weight= smrw, 
+induction= 180, latency= 180 , 
+ibd_def= ibd1, intime= filldate2, outtime='31Dec2022'd ,
+numyears=&num, outdata=IT , save=N ) ;
+/*Combining table for output of main results */
+%summarize(exposure=dpp4i, comparator=tzd);
+title ""; 
+
+%TVE_analysis (pstrim=N, exclude_ibd=N, 
+exposure= dpp4i , comparator= su,
+ana_name=mITinclIBtv, type= IT, 
+weight= smrw, induction= 180, latency= 180 ,
+ibd_def= ibd1, intime= filldate2, outtime='31Dec2022'd ,
+numyears=&num, outdata=IT , save=N ) ;
+%ACNU_analysis (pstrim=N, 
+exposure= dpp4i , comparator= su, 
+ana_name=mITinclIBac, type= IT, weight= smrw, 
+induction= 180, latency= 180 , 
+ibd_def= ibd1, intime= filldate2, outtime='31Dec2022'd ,
+numyears=&num, outdata=IT , save=N ) ;
+/*Combining table for output of main results */
+%summarize(exposure=dpp4i, comparator=su);
+title ""; 
+
+
+
+/*===================================*\
+//SECTION - ACNU Main Analysis IT TRIMMED
+\*===================================*/
+/* region */
+
+%let num=9;
+%TVE_analysis (pstrim=Y, exclude_ibd=Y, 
+exposure= dpp4i , comparator= sglt2i,
+ana_name=mITtvtrim, type= IT, 
+weight= smrw, induction= 180, latency= 180 ,
+ibd_def= ibd1, intime= filldate2, outtime='31Dec2022'd ,
+numyears=&num, outdata=IT , save=N ) ;
+%ACNU_analysis (pstrim=Y, 
+exposure= dpp4i , comparator= sglt2i, 
+ana_name=mITactrim, type= IT, weight= smrw, 
+induction= 180, latency= 180 , 
+ibd_def= ibd1, intime= filldate2, outtime='31Dec2022'd ,
+numyears=&num, outdata=IT , save=N ) ;
+/*Combining table for output of main results */
+%summarize(exposure=dpp4i, comparator=sglt2i);
+title ""; 
+
+%TVE_analysis (pstrim=Y, exclude_ibd=Y, 
+exposure= dpp4i , comparator= tzd,
+ana_name=mITtvtrim, type= IT, 
+weight= smrw, induction= 180, latency= 180 ,
+ibd_def= ibd1, intime= filldate2, outtime='31Dec2022'd ,
+numyears=&num, outdata=IT , save=N ) ;
+%ACNU_analysis (pstrim=Y, 
+exposure= dpp4i , comparator= tzd, 
+ana_name=mITactrim, type= IT, weight= smrw, 
+induction= 180, latency= 180 , 
+ibd_def= ibd1, intime= filldate2, outtime='31Dec2022'd ,
+numyears=&num, outdata=IT , save=N ) ;
+/*Combining table for output of main results */
+%summarize(exposure=dpp4i, comparator=tzd);
+title ""; 
+
+%TVE_analysis (pstrim=Y, exclude_ibd=Y, 
+exposure= dpp4i , comparator= su,
+ana_name=mITtvtrim, type= IT, 
+weight= smrw, induction= 180, latency= 180 ,
+ibd_def= ibd1, intime= filldate2, outtime='31Dec2022'd ,
+numyears=&num, outdata=IT , save=N ) ;
+%ACNU_analysis (pstrim=Y, 
+exposure= dpp4i , comparator= su, 
+ana_name=mITactrim, type= IT, weight= smrw, 
+induction= 180, latency= 180 , 
+ibd_def= ibd1, intime= filldate2, outtime='31Dec2022'd ,
+numyears=&num, outdata=IT , save=N ) ;
+/*Combining table for output of main results */
+%summarize(exposure=dpp4i, comparator=su);
+title ""; 
+
+/*=================*\
+Excel output if necessary but old code
+\*=================*/
 
 %LET num=9; *variable numyears for max years of KM plot ;
 

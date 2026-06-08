@@ -56,9 +56,9 @@ option SASAUTOS=(SASAUTOS "D:\Externe Projekte\UNC\wangje\prog\sas\macros");
         create table tmp_exclude_&comparator. /*all from comparator*/ as
         select distinct a.*,
         max( a.indexdate-&washoutp.<=b.discontDate and b.indexdate<a.indexdate ) as excludeflag_prevalentuser 
-																					label='EXCLUSION FLAG: prevalent user of &comparator. drug',
+            label='EXCLUSION FLAG: prevalent user of &comparator. drug',
         max(a.indexdate=b.indexdate) as excludeflag_samedayinitiator 
-																	label = 'EXCLUSION FLAG: dual  initiator of &comparator. drug',
+            label = 'EXCLUSION FLAG: dual  initiator of &comparator. drug',
         max(a.indexdate<b.indexdate<= a.filldate2) as excludeflag_prefill2initiator 
 																	label='EXCLUSION FLAG: pre-fill2 dual initiator of comparator drug before second fill date'
         from temp.&comparator._useperiods /*generated from 11_cleandata.sas*/ (where=(newuse=1 and useperiod=1) rename=(reason=reason1)) as a

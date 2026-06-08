@@ -1,6 +1,6 @@
-f/***************************************
+/***************************************
 SAS file name: 013_merge
-
+ 
 Purpose: merging and getting counts of each ACNU    (Active Comparator New User Cohorts)
 Author: JHW
 Creation Date: 
@@ -215,7 +215,7 @@ QUIT;
     label hba1ctime="HBA1c level/time (number of days between the last recording before the time0 and the time0)";
     label hba1cno="Number of HBA1c recordings within the last three years prior to the time0";
     label hba1cavg="Average HBA1c level within the last three years before the time0";
-    label history="Number of days of recorded history in the database prior to the time0 (the number of days between the first prescription in the patients’ profile and the time0, historical entries prior 1987 are ignored).";
+    label history="Number of days of recorded history in the database prior to the time0 (the number of days between the first prescription in the patientsï¿½ profile and the time0, historical entries prior 1987 are ignored).";
     label GPyearDx="Practice visits last year based on diagnoses = number of practice visits in the 365 days immediately prior to the time0 (count only visits at separate dates)";
     label GPyearDxRx="Practice visits last year based on diagnoses and prescriptions = number of practice visits in the 365 days immediately prior to the time0 (count only visits at separate dates)";
     /* Baseline vars- crude  */

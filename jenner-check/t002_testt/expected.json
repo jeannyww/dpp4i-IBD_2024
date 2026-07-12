@@ -1,0 +1,12 @@
+{
+  "_captured_at": "2026-07-12T03:22:00Z",
+  "_captured_run_id": "r_10a831a1ddaf47e88ab002662215a225",
+  "status": "ok",
+  "exit_code": 0,
+  "log_contains": [
+    "NOTE: PROC SQL",
+    "NOTE: PROC SQL statement used."
+  ],
+  "log_does_not_contain": ["ERROR:", "[JENNER-ERROR"],
+  "diagnostics": {"parse_warnings": [], "runtime_warnings": []}
+}

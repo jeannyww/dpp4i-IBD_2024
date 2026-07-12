@@ -1,0 +1,14 @@
+
+NOTE: Option OBS changed to 100.
+NOTE: DATA a1c
+
+NOTE: Processing inline DATALINES (9 lines)
+
+NOTE: Read 9 rows from DATALINES.
+NOTE: Wrote a1c (9 rows, 3 columns).
+NOTE: DATA elapsed:
+  wall  0.00 seconds
+  cpu   0.00 seconds
+NOTE: PROC FREQ
+NOTE: ODS plot written: freq_mosaic_true_prediction.spec.json
+NOTE: PROC FREQ statement used.

@@ -1,0 +1,7 @@
+{
+  "bundle": "t003_kappa_a1c",
+  "source_file": "RnR_programs/Tian_121824/200_MI_MODEL_1 glogit.sas",
+  "source_blob_sha": "f18606c7c43ad9af564a23345dc6360d39618e9a",
+  "source_commit": "f5e1e30249a09d38d1c138d1e6fdf643162efa9e",
+  "notes": "The repo's %kappa() macro (PROC FREQ agree/test kappa) plus its own 'a1c' inline DATALINES (HbA1c-category true-vs-predicted agreement counts, 9 rows) copied verbatim from lines 255-267 and 420-430 of the source file. Dropped only the macro's ods graphics/gpath lines, which reference an undefined &OutPath. outside the full multiple-imputation pipeline; the PROC FREQ statistics themselves are untouched."
+}

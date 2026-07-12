@@ -1,0 +1,42 @@
+                                                   The FREQ Procedure
+
+                                 Cumulative    Cumulative
+sex    Frequency    Percent     Frequency      Percent
+------------------------------------------------------------
+f              3     50.00            3        50.00
+m              3     50.00            6       100.00
+
+                                            Cumulative    Cumulative
+alcohol_status    Frequency    Percent     Frequency      Percent
+-----------------------------------------------------------------------
+c                         1     16.67            1        16.67
+n                         1     16.67            2        33.33
+s                         1     16.67            3        50.00
+u                         2     33.33            5        83.33
+x                         1     16.67            6       100.00
+
+                                     Cumulative    Cumulative
+bmi_cat    Frequency    Percent     Frequency      Percent
+----------------------------------------------------------------
+<25                2     33.33            2        33.33
+25-30              2     33.33            4        66.67
+>30                1     16.67            5        83.33
+Missing            1     16.67            6       100.00
+
+                                                   Cumulative    Cumulative
+hba1c_cat                Frequency    Percent     Frequency      Percent
+------------------------------------------------------------------------------
+<53 mmol/mol (<=7%)              2     33.33            2        33.33
+53-64 mmol/mol (7-8%)            2     33.33            4        66.67
+>64 mmol/mol (>8%)               1     16.67            5        83.33
+Missing/unknown                  1     16.67            6       100.00
+
+                                                           Cumulative    Cumulative
+tx_at_timepoint                  Frequency    Percent     Frequency      Percent
+--------------------------------------------------------------------------------------
+DPP4_i=0; SU=0; SGLT2=0;TZD=0            1     16.67            1        16.67
+DPP4_i=1; SU=1; SGLT2=0;TZD=0            1     16.67            2        33.33
+DPP4_i=1; SU=1; SGLT2=1;TZD=1            1     16.67            3        50.00
+DPP4_i=0; SU=1; SGLT2=0;TZD=0            1     16.67            4        66.67
+DPP4_i=1; SU=0; SGLT2=0;TZD=0            1     16.67            5        83.33
+DPP4_i=1; SU=0; SGLT2=0;TZD=1            1     16.67            6       100.00

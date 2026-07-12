@@ -1,0 +1,7 @@
+{
+  "bundle": "t001_formats",
+  "source_file": "prog/sas/formats/formats.sas",
+  "source_blob_sha": "04bc200b12407f0b2a4785a9e348f07cc4f26fac",
+  "source_commit": "f5e1e30249a09d38d1c138d1e6fdf643162efa9e",
+  "notes": "PROC FORMAT block (feventtype, $sexf, $statusf, bmif, hba1cf, drugs1yrcatf, reasonf, tx_statusf, tx_at_timepf) copied verbatim from the repo's formats.sas, which applies formats to the CPRD-DPP4i/IBD cohort variables and has no external data dependency. Added a small inline DATALINES sample (6 rows) shaped like the cohort variables (sex, alcohol_status, bmi_cat, hba1c_cat, tx_at_timepoint) plus a PROC FREQ so the run produces a visible listing exercising every format."
+}

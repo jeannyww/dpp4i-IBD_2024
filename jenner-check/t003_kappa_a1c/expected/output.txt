@@ -1,0 +1,14 @@
+                                                   The FREQ Procedure
+
+Statistics for Agreement of true by prediction
+
+Statistic                             Value          ASE
+--------------------------------------------------------
+Simple Kappa Coefficient             0.0481       0.0000
+Weighted Kappa Coefficient           0.0401            .
+
+Bowker's Test for Symmetry    
+Chi-Square                           2.5108
+DF                                        3
+Pr > ChiSq                           0.4733
+
